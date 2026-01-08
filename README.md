@@ -4,9 +4,6 @@
 
 Este projeto é o artefato prático do Trabalho de Conclusão de Curso em Ciência da Computação da Universidade Federal de Juiz de Fora (Ufjf). Trata-se de um protótipo de alta fidelidade de um jogo educativo (*Serious Game*) focado em ensinar lógica de programação para crianças, com ênfase na experiência de usuário em dispositivos móveis.
 
-![Preview do Jogo](screenshot.png)
-*(Coloque um print da tela da fase 1 ou do menu aqui)*
-
 ## 🎯 Objetivos do Projeto
 
 - **Acessibilidade Mobile:** Resolver o problema de usabilidade de ferramentas de blocos (VPL) em telas de toque, implementando física de arraste (*drag-and-drop*) e layouts responsivos.
