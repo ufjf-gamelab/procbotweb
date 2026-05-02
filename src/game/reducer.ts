@@ -1,20 +1,25 @@
-import type { Action, GameState, Cmd, CmdKind } from './types';
-import { level1, level2, level8 } from './levels';
+import type { Action, GameState, Cmd, CmdKind, Level } from './types';
+import { level8 } from './levels';
 
 const key = (x: number, y: number) => `${x},${y}`;
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
 const initialProgram: Cmd[] = [];
 
+const initFunctionsState = (level: Level) => {
+  return (level.functionsConfig || []).map(config => ({
+    id: config.id,
+    name: config.name,
+    program: [] as Cmd[]
+  }));
+};
+
 export const initialState: GameState = {
   level: level8,
   robot: { ...level8.start },
   lit: new Set<string>(),
   program: initialProgram,
-  function1: {
-    name: "Função 1",
-    program: [],
-  },
+  functions: initFunctionsState(level8),
   callStack: [],
   stepIndex: 0,
   running: false,
@@ -74,17 +79,27 @@ export function reducer(state: GameState, action: Action): GameState {
       arr.splice(action.to, 0, m);
       return { ...state, program: arr };
     }
+
     case 'resetProgram':
-      return { ...state, 
+      return { 
+        ...state, 
         program: [], 
-        function1: { 
-          ...state.function1, 
-          program: [] 
-        },
+        functions: state.functions.map(f => ({ ...f, program: [] })), // Limpa TODAS as funções
         stepIndex: 0, 
         running: false, 
-        win: false };
-     case 'setProgram':
+        win: false 
+      };
+      
+    case 'load_level':
+      return {
+        ...initialState,
+        level: action.level,
+        robot: { ...action.level.start },
+        functions: initFunctionsState(action.level),
+        program: [],
+      };
+      
+    case 'setProgram':
       return { ...state, program: action.program }; 
     case 'resetLevel':
       return { ...state, robot: { ...state.level.start }, lit: new Set(), stepIndex: 0, running: false, win: false };
@@ -101,6 +116,7 @@ export function reducer(state: GameState, action: Action): GameState {
       }
     case 'clearWin':
       return { ...state, win: false };
+
     case 'stepOnce': {
       if (!state.running || state.win || state.callStack.length === 0) {
         return { ...state, running: false };
@@ -111,7 +127,6 @@ export function reducer(state: GameState, action: Action): GameState {
 
       if (currentContext.stepIndex >= currentContext.program.length) {
         stack.pop();
-        
         if (stack.length === 0) {
           return { ...state, running: false, callStack: [] };
         }
@@ -119,26 +134,28 @@ export function reducer(state: GameState, action: Action): GameState {
         const parentContext = { ...stack[stack.length - 1] };
         parentContext.stepIndex += 1;
         stack[stack.length - 1] = parentContext;
-        
         return { ...state, callStack: stack };
       }
 
       const cmd = currentContext.program[currentContext.stepIndex];
 
-      if (cmd.kind === 'CALL_F1') {
-        if (state.function1.program.length === 0) {
+      const funcIdToCall = cmd.kind.startsWith('CALL_') ? state.functions[0]?.id : cmd.kind;
+      
+      const targetFuncState = state.functions.find(f => f.id === funcIdToCall);
+      // ------------------------------------------
+
+      if (targetFuncState) {
+        if (targetFuncState.program.length === 0) {
            currentContext.stepIndex += 1;
            stack[stack.length - 1] = currentContext;
            return { ...state, callStack: stack };
         }
 
-        stack.push({ program: state.function1.program, stepIndex: 0 });
-        
+        stack.push({ program: targetFuncState.program, stepIndex: 0 });
         return { ...state, callStack: stack };
       }
 
-      const nextState = applyCmd(state, cmd.kind); 
-      
+      const nextState = applyCmd(state, cmd.kind);
       currentContext.stepIndex += 1;
       stack[stack.length - 1] = currentContext;
 
@@ -148,20 +165,12 @@ export function reducer(state: GameState, action: Action): GameState {
         stepIndex: stack.length === 1 ? currentContext.stepIndex : state.stepIndex 
       };
     }
-    case 'load_level':
-    return {
-      ...initialState,
-      level: action.level,
-      robot: { ...action.level.start },
-    };
-    case 'rename_f1':
-      return { ...state, function1: { ...state.function1, name: action.name } };
-    
-      case 'ADD_TO_MAIN':
-        var limit = state.level.maxMain ?? 99;
-        if (state.program.length >= limit) {
-        return state; 
-      }
+
+
+    case 'ADD_TO_MAIN':
+      var limit = state.level.maxMain ?? 99;
+      if (state.program.length >= limit) return state; 
+      
       return { 
         ...state, 
         program: [...state.program, { id: crypto.randomUUID(), kind: action.kind }] 
@@ -179,43 +188,68 @@ export function reducer(state: GameState, action: Action): GameState {
         program: action.program 
       };
 
-    case 'ADD_TO_F1':
-      limit = state.level.maxF1 ?? 99;
-
-      if (limit === 0 || state.function1.program.length >= limit) {
-        return state;
-      }
-
-      if (action.kind === 'CALL_F1') {
-        alert("Uma função não pode chamar ela mesma!"); 
-        return state;
-      }
+    case 'ADD_TO_FUNC': {
+      const funcConfig = state.level.functionsConfig.find(f => f.id === action.funcId);
+      const funcIndex = state.functions.findIndex(f => f.id === action.funcId);
       
-      return { 
-        ...state, 
-        function1: {
-          ...state.function1,
-          program: [...state.function1.program, { id: crypto.randomUUID(), kind: action.kind }]
-        }
+      if (!funcConfig || funcIndex === -1) return state;
+
+      const funcState = state.functions[funcIndex];
+
+      if (funcState.program.length >= funcConfig.maxCommands) return state;
+
+      if (action.kind === action.funcId) {
+        alert("Nesta versão, uma função não pode chamar a si mesma!"); 
+        return state;
+      }
+
+      const newFunctions = [...state.functions];
+      newFunctions[funcIndex] = {
+        ...funcState,
+        program: [...funcState.program, { id: crypto.randomUUID(), kind: action.kind }]
       };
 
-    case 'REMOVE_FROM_F1':
-      return { 
-        ...state, 
-        function1: {
-          ...state.function1,
-          program: state.function1.program.filter(c => c.id !== action.id)
-        }
+      return { ...state, functions: newFunctions };
+    }
+
+    case 'REMOVE_FROM_FUNC': {
+      const funcIndex = state.functions.findIndex(f => f.id === action.funcId);
+      if (funcIndex === -1) return state;
+
+      const newFunctions = [...state.functions];
+      newFunctions[funcIndex] = {
+        ...newFunctions[funcIndex],
+        program: newFunctions[funcIndex].program.filter(c => c.id !== action.id)
       };
 
-    case 'SET_PROGRAM_F1':
-      return { 
-        ...state, 
-        function1: {
-          ...state.function1,
-          program: action.program
-        }
+      return { ...state, functions: newFunctions };
+    }
+
+    case 'SET_PROGRAM_FUNC': {
+      const funcIndex = state.functions.findIndex(f => f.id === action.funcId);
+      if (funcIndex === -1) return state;
+
+      const newFunctions = [...state.functions];
+      newFunctions[funcIndex] = {
+        ...newFunctions[funcIndex],
+        program: action.program
       };
+
+      return { ...state, functions: newFunctions };
+    }
+
+    case 'RENAME_FUNC': {
+      const funcIndex = state.functions.findIndex(f => f.id === action.funcId);
+      if (funcIndex === -1) return state;
+
+      const newFunctions = [...state.functions];
+      newFunctions[funcIndex] = {
+        ...newFunctions[funcIndex],
+        name: action.newName 
+      };
+
+      return { ...state, functions: newFunctions };
+    }
 
     default: return state;
   }

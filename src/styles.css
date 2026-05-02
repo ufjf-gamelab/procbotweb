@@ -1,7 +1,12 @@
 :root { --gap: 12px; --panel: 12px; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
 * { box-sizing: border-box; }
 
-h3 { margin: 0 0 8px; font-size: 14px; opacity: .9; letter-spacing:.02em; }
+h3 { 
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin: 0 0 8px; font-size: 14px; opacity: .9; letter-spacing:.02em; }
 
 .layout {
   display: grid;
@@ -230,13 +235,25 @@ h3 {
 .program-list {
   min-height: 120px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr); 
   align-content: start;
   gap: 8px;
   padding: 8px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, .02);
-  border: 1px dashed rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.12);
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.program-list.is-valid {
+  border-color: #60a5fa !important; 
+  background-color: rgba(96, 165, 250, 0.05) !important;
+}
+
+.program-list.is-full {
+  border-color: #ff5252 !important; 
+  background-color: rgba(255, 82, 82, 0.1) !important; 
 }
 
 
@@ -284,16 +301,6 @@ h3 {
   border-radius: 0;
 }
 
-/* .robot::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url('assets/robo.png'); 
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  transform: rotate(-90deg); 
-} */
 
 .controls-wrap {
   margin-top: 8px;
@@ -507,6 +514,86 @@ button:disabled {
 
 .btns button:first-child:hover:not(:disabled) {
   background-color: #93c5fd;
+}
+
+.editable-title {
+  background: transparent; 
+  border: 1px solid transparent; 
+  border-radius: 4px;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: bold;
+  min-width: 50px;
+  max-width: 100px;
+  outline: none;
+  padding: 4px 6px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.command-label {
+  font-size: 13px;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap; 
+  overflow: hidden;
+  text-overflow: ellipsis; 
+  max-width: 50px; 
+  display: block;
+  text-transform: uppercase; 
+}
+
+.edit-icon {
+  opacity: 0.4;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  pointer-events: none; 
+}
+
+.editable-title-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.editable-title-wrapper:hover .editable-title {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.editable-title-wrapper:hover .edit-icon {
+  opacity: 1; 
+  color: #60a5fa;
+}
+
+.editable-title:focus {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: #60a5fa; 
+  cursor: text; 
+}
+
+.editable-title:focus + .edit-icon {
+  opacity: 1;
+  color: #60a5fa; 
+}
+
+.limit-count {
+  white-space: nowrap; 
+  flex-shrink: 0; 
+  opacity: 0.7;
+  margin-left: auto; 
+}
+
+.limit-count.is-full {
+  opacity: 1; 
+  font-weight: bold; 
+  transition: all 0.2s ease;
 }
 
 @media (max-width: 980px) {

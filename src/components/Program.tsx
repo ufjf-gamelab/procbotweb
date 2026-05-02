@@ -1,14 +1,15 @@
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, useDndContext } from '@dnd-kit/core';
+import { useRef } from 'react';
 import {
   SortableContext,
   useSortable,
-  rectSortingStrategy,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Cmd } from '../game/types';
 import { Command } from './Command';
 
-function SortableCommandItem({ item, onRemove }: { item: Cmd; onRemove: (id: string) => void }) {
+function SortableCommandItem({ item, onRemove, functionName }: { item: Cmd; onRemove: (id: string) => void; functionName?: string }) {
   const {
     attributes,
     listeners,
@@ -21,7 +22,11 @@ function SortableCommandItem({ item, onRemove }: { item: Cmd; onRemove: (id: str
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
+    height: '50px',
+    marginBottom: '4px',
+    position: 'relative' as const,
+    zIndex: isDragging ? 1 : 0,
   };
 
   return (
@@ -32,44 +37,92 @@ function SortableCommandItem({ item, onRemove }: { item: Cmd; onRemove: (id: str
         onRemove={onRemove}
         attributes={attributes}
         listeners={listeners}
+        functionName={functionName}
+        isDragging={isDragging}
       />
     </div>
   );
 }
 
 
-export function Program({ programId, title, items, onRemove, onRename }: 
-  { programId: string; title: string; items: Cmd[], onRemove: (id: string)=>void, onRename?: (newName: string) => void; }) {
-  const itemIds = items.map(item => `prog-${item.id}`);
-  
-  const { setNodeRef, isOver } = useDroppable({
+export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions }: 
+  { programId: string; title: string; limitText: string; 
+    onTitleChange?: (newName: string) => void; 
+    isFull: boolean;
+    items: Cmd[], onRemove: (id: string)=>void;
+  functions?: { id: string; name: string; program: Cmd[] }[];
+ }) {
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { setNodeRef } = useDroppable({
     id: `program-drop-${programId}`,
   });
 
+  const { over } = useDndContext();
+  const isOverContainer = 
+    over?.id === `program-drop-${programId}` || 
+    items.some(cmd => `prog-${cmd.id}` === over?.id);
+
+  let dropClassName = "program-list";
+  if (isOverContainer) {
+    dropClassName += isFull ? " is-full" : " is-valid";
+  }
+
   return (
     <section className="panel">
-      {onRename ? (
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => onRename(e.target.value)}
-          style={{ background: 'none', border: '1px solid #fff', color: '#fff', fontSize: '14px', marginBottom: '8px' }}
-        />
-      ) : (
-        <h3>{title}</h3>
-      )}
+      <h3>
+        {onTitleChange ? (
+          <div className="editable-title-wrapper" onClick={() => inputRef.current?.focus()}>
+            <svg className="edit-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <input 
+              ref={inputRef}
+              type="text" 
+              value={title} 
+              onChange={(e) => onTitleChange(e.target.value)}
+              className="editable-title"
+              maxLength={12}
+            />
+          </div>
+        ) : (
+          <span>{title}</span>
+        )}
+        
+        {limitText && (
+          <span className={`limit-count ${isFull ? 'is-full' : ''}`}>
+            {limitText}
+          </span>
+        )}
+      </h3>
       <div
         ref={setNodeRef}
-        className="program-list"
+        className={dropClassName}
         style={{
-          outline: isOver ? '2px solid #5877ff' : '1px dashed rgba(255,255,255,.12)',
+          outline: isOverContainer ? '2px solid #5877ff' : '1px dashed rgba(255,255,255,.12)',
           outlineOffset: '2px',
         }}
       >
-        <SortableContext items={itemIds} strategy={rectSortingStrategy}>
-          {items.map(item => (
-            <SortableCommandItem key={item.id} item={item} onRemove={onRemove} />
-          ))}
+       <SortableContext items={items.map(i => `prog-${i.id}`)} strategy={verticalListSortingStrategy}>
+          {items.map((cmd) => {
+            const isFunction = String(cmd.kind).startsWith('CALL_');
+            let funcData;
+
+            if (isFunction) {
+              const funcId = String(cmd.kind).replace('CALL_', '');
+              funcData = functions?.find(f => String(f.id).toUpperCase() === funcId.toUpperCase());
+            }
+            
+            return (
+              <SortableCommandItem
+                key={cmd.id}
+                item={cmd}
+                onRemove={() => onRemove(cmd.id)}
+                functionName={funcData?.name}
+              />
+            );
+          })}
         </SortableContext>
         {items.length === 0 && <p className="hint">Arraste comandos aqui</p>}
       </div>

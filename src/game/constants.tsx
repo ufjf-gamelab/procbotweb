@@ -2,8 +2,7 @@ import {
     AiOutlineArrowUp, 
     AiOutlineRotateRight,
     AiOutlineRotateLeft,
-    AiOutlineBulb, 
-    AiOutlineFunction 
+    AiOutlineBulb,
   } from "react-icons/ai";
   import type { CmdKind } from './types';
 
@@ -27,10 +26,5 @@ ACENDER: {
     icon: <AiOutlineBulb size={20} />, 
     label: 'Luz',
     color: '#34d399' 
-},
-CALL_F1: { 
-    icon: <AiOutlineFunction size={20} />, 
-    label: 'Func 1', 
-    color: '#a78bfa' 
-},
+}
 };

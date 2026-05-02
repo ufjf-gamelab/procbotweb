@@ -22,7 +22,8 @@ import type { Cmd, CmdKind } from './game/types';
 import { 
   AiFillPlayCircle, 
   AiOutlineDelete, 
-  AiOutlineReload 
+  AiOutlineReload,
+  AiOutlineHome,
 } from "react-icons/ai";
 import './styles.css';
 
@@ -30,7 +31,7 @@ const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export default function App() {
   const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
-  const [completedLevels, setCompletedLevels] = useState<string[]>(["1","2","3","4","5","6","7","8"]);
+  const [completedLevels, setCompletedLevels] = useState<string[]>(["1","2","3","4","5","6","7"]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [showWinModal, setShowWinModal] = useState(false);
@@ -108,24 +109,32 @@ export default function App() {
 
     function findContainer(id: string) {
       if (id === 'program-drop-main') return 'main';
-      if (id === 'program-drop-func1') return 'f1';
       
+      if (id.startsWith('program-drop-')) {
+        const containerId = id.replace('program-drop-', '');
+        if (containerId !== 'main') return containerId; 
+      }
+
       if (state.program.find(i => `prog-${i.id}` === id)) return 'main';
-      if (state.function1.program.find(i => `prog-${i.id}` === id)) return 'f1';
-      
+
+      for (const func of state.functions) {
+        if (func.program.find(i => `prog-${i.id}` === id)) {
+          return func.id; 
+        }
+      }
+
       return null;
     }
 
     const targetContainer = findContainer(overId);
 
-    // --- 2. LÓGICA DE ADICIONAR DA PALETA ---
     if (activeId.startsWith('pal-')) {
       const kind = activeId.replace('pal-', '') as CmdKind;
       
       if (targetContainer === 'main') {
         dispatch({ type: 'ADD_TO_MAIN', kind });
-      } else if (targetContainer === 'f1') {
-        dispatch({ type: 'ADD_TO_F1', kind });
+      } else if (targetContainer && targetContainer !== 'main') {
+        dispatch({ type: 'ADD_TO_FUNC', funcId: targetContainer, kind });
       }
       return;
     }
@@ -144,14 +153,16 @@ export default function App() {
               dispatch({ type: 'SET_PROGRAM_MAIN', program: newProgram });
             }
           }
+          else {
+            const funcState = state.functions.find(f => f.id === activeContainer);
+            if (funcState) {
+              const oldIndex = funcState.program.findIndex(c => `prog-${c.id}` === activeId);
+              const newIndex = funcState.program.findIndex(c => `prog-${c.id}` === overId);
 
-          else if (activeContainer === 'f1') {
-            const oldIndex = state.function1.program.findIndex(c => `prog-${c.id}` === activeId);
-            const newIndex = state.function1.program.findIndex(c => `prog-${c.id}` === overId);
-
-            if (oldIndex !== -1 && newIndex !== -1) {
-              const newProgram = arrayMove(state.function1.program, oldIndex, newIndex);
-              dispatch({ type: 'SET_PROGRAM_F1', program: newProgram });
+              if (oldIndex !== -1 && newIndex !== -1) {
+                const newProgram = arrayMove(funcState.program, oldIndex, newIndex);
+                dispatch({ type: 'SET_PROGRAM_FUNC', funcId: activeContainer, program: newProgram });
+              }
             }
           }
       }
@@ -187,7 +198,7 @@ export default function App() {
   const activeCommand: Cmd | undefined = activeId
     ? (
       state.program.find(cmd => `prog-${cmd.id}` === activeId) ||
-      state.function1.program.find(cmd => `prog-${cmd.id}` === activeId)
+      state.functions.flatMap(f => f.program).find(cmd => `prog-${cmd.id}` === activeId)
     ) : undefined;
 
   const limitMain = state.level.maxMain ?? 99;
@@ -196,10 +207,10 @@ export default function App() {
     ? `Programa Principal (${countMain}/${limitMain})` 
     : "Programa Principal";
 
-  const limitF1 = state.level.maxF1 ?? 0;
-  const countF1 = state.function1.program.length;
-  const showF1 = limitF1 > 0;
-  const titleF1 = `Função (${countF1}/${limitF1})`;
+  // const limitF1 = state.level.maxF1 ?? 0;
+  // const countF1 = state.function1.program.length;
+  // const showF1 = limitF1 > 0;
+  // const titleF1 = `Função (${countF1}/${limitF1})`;
 
 
   if (view === 'MENU') {
@@ -233,7 +244,7 @@ export default function App() {
         onClick={handleBackToMenu}
         style={{ position: 'fixed', top: 10, left: 10, zIndex: 100 }}
         >
-         ← Voltar
+        <AiOutlineHome size={18} />
         </button>
       </div>
       <DndContext 
@@ -279,43 +290,82 @@ export default function App() {
           <div className="sidebar">
             <div className="left">
               <Palette 
-                onCommandClick={handleAddByClick}
-                functionName={state.function1.name}
-                showF1Button={showF1}
+                onCommandClick={(kind) => dispatch({ type: 'ADD_TO_MAIN', kind: kind as CmdKind })}
+                functions={state.functions} 
               />
             </div>
             <div className="right">
               <Program
-                programId="main"
-                title={titleMain}
-                items={state.program}
-                onRemove={(id) => dispatch({ type: 'REMOVE_FROM_MAIN', id })}
-              />
-              {showF1 && (
-                <Program
-                  programId="func1"
-                  title={titleF1}
-                  items={state.function1.program}
-                  onRemove={(id) => dispatch({ type: 'REMOVE_FROM_F1', id: id })}
+                  programId="main"
+                  title="Programa Principal" 
+                  limitText={`(${countMain}/${limitMain})`} 
+                  isFull={countMain >= limitMain}
+                  items={state.program}
+                  onRemove={(id) => dispatch({ type: 'REMOVE_FROM_MAIN', id })}
+                  functions={state.functions} 
                 />
-              )}
+              {state.level.functionsConfig.map((config) => {
+                const funcData = state.functions.find(f => f.id === config.id);
+                
+                if (!funcData) return null;
+
+                return (
+                  <Program
+                    key={config.id}
+                    programId={config.id}
+                    title={funcData.name} 
+                    limitText={`(${funcData.program.length}/${config.maxCommands})`}
+                    onTitleChange={(newName) => dispatch({ 
+                      type: 'RENAME_FUNC', 
+                      funcId: config.id, 
+                      newName: newName 
+                    })}
+                    items={funcData.program}
+                    isFull={funcData.program.length >= config.maxCommands}
+                    onRemove={(cmdId) => dispatch({ 
+                      type: 'REMOVE_FROM_FUNC', 
+                      funcId: config.id, 
+                      id: cmdId 
+                    })}
+                    functions={state.functions}
+                  />
+                );
+              })}
               <div className="spacer" />
             </div>
           </div>
         </main>
         <DragOverlay dropAnimation={null}>
-            {activeId ? 
-            (activeId.startsWith('prog-') && activeCommand ? (
+          {activeId ? (
+            activeId.startsWith('prog-') && activeCommand ? (
               <div style={{ height: '50px' }}>
-                <Command kind={activeCommand.kind} id={activeCommand.id} isDragging />
-              </div>
-            ): activeId.startsWith('pal-') ? (
-              <div style={{ height: '50px' }}>
-                <Command kind={activeId.replace('pal-', '') as CmdKind} id="ghost" isDragging />
-              </div>
-            ) : null
-          ) : null}
-        </DragOverlay>
+                <Command 
+                  kind={activeCommand.kind} 
+                  id={activeCommand.id} 
+                  isDragging 
+                  functionName={
+                    activeCommand.kind.startsWith('CALL_') 
+                      ? state.functions.find(f => String(f.id).toUpperCase() === activeCommand.kind.replace('CALL_', ''))?.name
+                      : state.functions.find(f => f.id === activeCommand.kind)?.name
+                  } 
+                />
+      </div>
+    ) : activeId.startsWith('pal-') ? (
+      <div style={{ height: '50px' }}>
+        <Command 
+          kind={activeId.replace('pal-', '') as CmdKind} 
+          id="ghost" 
+          isDragging 
+          functionName={
+            activeId.includes('CALL_')
+              ? state.functions.find(f => String(f.id).toUpperCase() === activeId.replace('pal-CALL_', ''))?.name
+              : state.functions.find(f => f.id === activeId.replace('pal-', ''))?.name
+          }
+        />
+      </div>
+    ) : null
+  ) : null}
+</DragOverlay>
       </DndContext>
     </>
   );

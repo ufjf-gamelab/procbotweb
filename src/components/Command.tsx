@@ -10,7 +10,10 @@ type Props = {
   onRemove?: (id: string) => void;
   attributes?: DraggableAttributes;
   listeners?: SyntheticListenerMap;
+  functionName?: string;
 };
+
+const FUNCTION_THEME_COLOR = '#a78bfa';
 
 export function Command({
   kind,
@@ -19,9 +22,21 @@ export function Command({
   onRemove,
   attributes,
   listeners,
+  functionName
 }: Props) {
   const className = `block ${isDragging ? 'dragging' : ''}`;
-  const config = CMD_CONFIG[kind];
+
+  const isFunction = String(kind).startsWith('CALL_');  
+  let config;
+
+  if (isFunction) {
+    config = {
+      color: FUNCTION_THEME_COLOR,
+      icon: <span style={{ fontStyle: 'italic', fontFamily: 'serif' }}>{functionName}</span>
+    };
+  } else {
+    config = CMD_CONFIG[kind]
+  }
 
   if (!config) return null;
 
@@ -46,7 +61,15 @@ export function Command({
       title={`Arrastar para mover, Clique para remover`}
     >
       <span style={{ color: config.color, display: 'flex', fontSize: '24px' }}>
-        {config.icon}
+        {isFunction ? (
+          <span className="command-label">
+            {functionName || config.icon}
+          </span>
+        ) : (
+          <span style={{ fontSize: '24px' }}>
+            {config.icon}
+          </span>
+        )}
       </span>
     </div>
   );

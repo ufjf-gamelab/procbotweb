@@ -2,12 +2,13 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
 import type { CmdKind } from '../game/types';
-import { CMD_CONFIG } from '../game/constants';
+// import { CMD_CONFIG } from '../game/constants';
+import { Command } from './Command';
 
-const PALETTE: CmdKind[] = ['ANDAR','ESQUERDA','DIREITA','ACENDER', 'CALL_F1'];
+const BASE_COMMANDS: CmdKind[] = ['ANDAR','ESQUERDA','DIREITA','ACENDER'];
 
 type PalItemProps = {
-  kind: CmdKind;
+  kind: string;
   onCommandClick: () => void;
   dynamicLabel?: string;
 };
@@ -15,8 +16,6 @@ type PalItemProps = {
 function PalItem({ kind, onCommandClick, dynamicLabel }: PalItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: `pal-${kind}` });
-
-  const config = CMD_CONFIG[kind];
 
   const style = {
     transform: CSS.Translate.toString(transform), 
@@ -28,40 +27,52 @@ function PalItem({ kind, onCommandClick, dynamicLabel }: PalItemProps) {
     <motion.div
       ref={setNodeRef}
       style={style}
-      className="block"
+      className="palette-item-wrapper"
       whileHover={{ scale: 1.04 }}
       whileTap={{ scale: 0.98 }}
       onClick={onCommandClick}
-      {...listeners} {...attributes}
     >
-      <span style={{ color: config.color, display: 'flex', alignItems: 'center' }}>
-        {config.icon}
-        </span>
+      <Command 
+        kind={kind as CmdKind}
+        id={`pal-${kind}`} 
+        isDragging={isDragging}
+        attributes={attributes}
+        listeners={listeners}
+        functionName={dynamicLabel} 
+      />
     </motion.div>
   );
 }
 
 type PaletteProps = {
-  onCommandClick: (kind: CmdKind) => void;
-  functionName: string;
-  showF1Button: boolean;
+  onCommandClick: (kind: CmdKind| string) => void;
+  functions: { id: string; name: string }[];
 };
 
-export function Palette({onCommandClick, functionName, showF1Button = true}: PaletteProps) {
+export function Palette({onCommandClick, functions = []}: PaletteProps) {
   return (
     <section className="panel">
       <h3>Paleta</h3>
       <div className="palette-grid">
-        {PALETTE
-        .filter(k => showF1Button || k !== 'CALL_F1')
-        .map(k => (
+        {BASE_COMMANDS.map(k => (
           <PalItem 
             key={k} 
             kind={k} 
             onCommandClick={() => onCommandClick(k)} 
-            dynamicLabel={k === 'CALL_F1' ? functionName : undefined}
           />
         ))}
+        {functions.map(f => {
+          
+          const cmdKind = `CALL_${f.id.toUpperCase()}`; 
+          return (
+            <PalItem 
+              key={f.id} 
+              kind={cmdKind} 
+              onCommandClick={() => onCommandClick(cmdKind)} 
+              dynamicLabel={f.name} 
+            />
+          );
+        })}
       </div>
     </section>
   );
