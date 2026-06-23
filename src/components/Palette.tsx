@@ -43,11 +43,11 @@ function PalItem({ kind, onCommandClick }: PalItemProps) {
 
 type PaletteProps = {
   onCommandClick: (kind: CmdKind) => void;
-  functionName: string;
+  // functionName: string;
   showF1Button: boolean;
 };
 
-export function Palette({onCommandClick, functionName, showF1Button = true}: PaletteProps) {
+export function Palette({onCommandClick, showF1Button = true}: PaletteProps) {
   return (
     <section className="panel">
       <h3>Paleta</h3>
