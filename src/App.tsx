@@ -280,7 +280,7 @@ export default function App() {
             <div className="left">
               <Palette 
                 onCommandClick={handleAddByClick}
-                functionName={state.function1.name}
+                // functionName={state.function1.name}
                 showF1Button={showF1}
               />
             </div>
