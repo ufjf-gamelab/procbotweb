@@ -31,7 +31,7 @@ import './styles.css';
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export default function App() {
-  const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
+  // const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
   const [completedLevels, setCompletedLevels] = useState<string[]>(["1","2","3","4","5"]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [state, dispatch] = useReducer(reducer, initialState);
