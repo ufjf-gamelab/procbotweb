@@ -139,9 +139,13 @@ export function reducer(state: GameState, action: Action): GameState {
 
       const cmd = currentContext.program[currentContext.stepIndex];
 
-      const funcIdToCall = cmd.kind.startsWith('CALL_') ? state.functions[0]?.id : cmd.kind;
+      const funcIdFromCommand = cmd.kind.startsWith('CALL_') 
+        ? cmd.kind.slice(5)
+        : cmd.kind;
       
-      const targetFuncState = state.functions.find(f => f.id === funcIdToCall);
+      const targetFuncState = state.functions.find(f => 
+        f.id.toString().toLowerCase() === funcIdFromCommand.toString().toLowerCase()
+      );
       // ------------------------------------------
 
       if (targetFuncState) {

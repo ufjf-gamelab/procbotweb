@@ -24,6 +24,7 @@ import {
   AiOutlineDelete, 
   AiOutlineReload,
   AiOutlineHome,
+  AiFillStar
 } from "react-icons/ai";
 import './styles.css';
 
@@ -31,11 +32,12 @@ const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export default function App() {
   const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
-  const [completedLevels, setCompletedLevels] = useState<string[]>(["1","2","3","4","5","6","7"]);
+  const [completedLevels, setCompletedLevels] = useState<string[]>(["1","2","3","4","5"]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [showWinModal, setShowWinModal] = useState(false);
   const [view, setView] = useState<'MENU' | 'GAME'>('MENU');
+  const [mascotTip, setMascotTip] = useState("Vamos lá! Arraste os comandos para o Programa Principal.");
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
 
@@ -203,15 +205,6 @@ export default function App() {
 
   const limitMain = state.level.maxMain ?? 99;
   const countMain = state.program.length;
-  const titleMain = state.level.maxMain 
-    ? `Programa Principal (${countMain}/${limitMain})` 
-    : "Programa Principal";
-
-  // const limitF1 = state.level.maxF1 ?? 0;
-  // const countF1 = state.function1.program.length;
-  // const showF1 = limitF1 > 0;
-  // const titleF1 = `Função (${countF1}/${limitF1})`;
-
 
   if (view === 'MENU') {
     return (
@@ -240,19 +233,53 @@ export default function App() {
             />
 
       <div className="level-controls">
-       <button 
-        onClick={handleBackToMenu}
-        style={{ position: 'fixed', top: 10, left: 10, zIndex: 100 }}
-        >
-        <AiOutlineHome size={18} />
-        </button>
+       
       </div>
+
+        <header className="game-header">
+        <div className="header-left">
+          <button 
+            onClick={handleBackToMenu}>
+            <AiOutlineHome size={18} />
+          </button>
+
+          <div className="status-badge phase-badge">
+            <span>FASE {state.level.id.padStart(2, '0')}</span>
+          </div>
+          <div className="status-badge stars-badge">
+            <AiFillStar className="icon-star" />
+            <span>2 / 3</span>
+          </div>
+        </div>
+
+        <div className="header-right">
+          <div className="status-badge score-badge">
+            <div className="coin-icon">G</div>
+            <span>120</span>
+          </div>
+        </div>
+      </header>
+
       <DndContext 
         sensors={sensors} 
         collisionDetection={closestCenter} 
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}>
         <main className="layout">
+          <aside className="mascot-area">
+          <div className="mascot-tip-container">
+            <img 
+              src="./src/assets/robot_tip.png" 
+              alt="Mascote Robô" 
+              className="mascot-image" 
+            />
+            
+            <div className="speech-bubble">
+              <p>{mascotTip}</p>
+            </div>
+          </div>
+        </aside>
+
           <div className="center">
             <Board level={state.level} robot={state.robot} lit={state.lit} />
             <div className="controls-wrap">
