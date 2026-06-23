@@ -1,5 +1,8 @@
 import type { Action, GameState, Cmd, CmdKind } from './types';
-import { level1, level2, level8 } from './levels';
+import { 
+  // level1, 
+  // level2, 
+  level8 } from './levels';
 
 const key = (x: number, y: number) => `${x},${y}`;
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));

@@ -12,7 +12,7 @@ type PalItemProps = {
   dynamicLabel?: string;
 };
 
-function PalItem({ kind, onCommandClick, dynamicLabel }: PalItemProps) {
+function PalItem({ kind, onCommandClick }: PalItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: `pal-${kind}` });
 
@@ -59,7 +59,7 @@ export function Palette({onCommandClick, functionName, showF1Button = true}: Pal
             key={k} 
             kind={k} 
             onCommandClick={() => onCommandClick(k)} 
-            dynamicLabel={k === 'CALL_F1' ? functionName : undefined}
+            // dynamicLabel={k === 'CALL_F1' ? functionName : undefined}
           />
         ))}
       </div>
