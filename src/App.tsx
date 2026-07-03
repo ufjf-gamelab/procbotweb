@@ -38,6 +38,8 @@ export default function App() {
   const [showWinModal, setShowWinModal] = useState(false);
   const [view, setView] = useState<'MENU' | 'GAME'>('MENU');
   const [mascotTip, setMascotTip] = useState("Vamos lá! Arraste os comandos para o Programa Principal.");
+  const [mascotTipOpen, setMascotTipOpen] = useState(true);
+  const [activeCmdTab, setActiveCmdTab] = useState<string>('main');
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
 
@@ -266,14 +268,17 @@ export default function App() {
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}>
         <main className="layout">
-          <aside className="mascot-area">
+          <aside className={`mascot-area ${mascotTipOpen ? 'tip-open' : ''}`}>
           <div className="mascot-tip-container">
-            <img 
-              src="./src/assets/robot_tip.png" 
-              alt="Mascote Robô" 
-              className="mascot-image" 
+            <img
+              src="./src/assets/robot_tip.png"
+              alt="Mascote Robô"
+              className="mascot-image"
+              role="button"
+              aria-expanded={mascotTipOpen}
+              onClick={() => setMascotTipOpen(open => !open)}
             />
-            
+
             <div className="speech-bubble">
               <p>{mascotTip}</p>
             </div>
@@ -322,40 +327,70 @@ export default function App() {
               />
             </div>
             <div className="right">
-              <Program
-                  programId="main"
-                  title="Programa Principal" 
-                  limitText={`(${countMain}/${limitMain})`} 
-                  isFull={countMain >= limitMain}
-                  items={state.program}
-                  onRemove={(id) => dispatch({ type: 'REMOVE_FROM_MAIN', id })}
-                  functions={state.functions} 
-                />
+              <div className="cmd-tabs">
+                <button
+                  type="button"
+                  className={`cmd-tab ${activeCmdTab === 'main' ? 'is-active' : ''}`}
+                  onClick={() => setActiveCmdTab('main')}
+                >
+                  Programa <span>{countMain}/{limitMain}</span>
+                </button>
+                {state.level.functionsConfig.map((config) => {
+                  const funcData = state.functions.find(f => f.id === config.id);
+                  if (!funcData) return null;
+                  return (
+                    <button
+                      type="button"
+                      key={config.id}
+                      className={`cmd-tab ${activeCmdTab === config.id ? 'is-active' : ''}`}
+                      onClick={() => setActiveCmdTab(config.id)}
+                    >
+                      {funcData.name} <span>{funcData.program.length}/{config.maxCommands}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className={`cmd-tab-panel ${activeCmdTab === 'main' ? 'is-active' : ''}`}>
+                <Program
+                    programId="main"
+                    title="Programa Principal"
+                    limitText={`(${countMain}/${limitMain})`}
+                    isFull={countMain >= limitMain}
+                    items={state.program}
+                    onRemove={(id) => dispatch({ type: 'REMOVE_FROM_MAIN', id })}
+                    functions={state.functions}
+                  />
+              </div>
               {state.level.functionsConfig.map((config) => {
                 const funcData = state.functions.find(f => f.id === config.id);
-                
+
                 if (!funcData) return null;
 
                 return (
-                  <Program
+                  <div
                     key={config.id}
-                    programId={config.id}
-                    title={funcData.name} 
-                    limitText={`(${funcData.program.length}/${config.maxCommands})`}
-                    onTitleChange={(newName) => dispatch({ 
-                      type: 'RENAME_FUNC', 
-                      funcId: config.id, 
-                      newName: newName 
-                    })}
-                    items={funcData.program}
-                    isFull={funcData.program.length >= config.maxCommands}
-                    onRemove={(cmdId) => dispatch({ 
-                      type: 'REMOVE_FROM_FUNC', 
-                      funcId: config.id, 
-                      id: cmdId 
-                    })}
-                    functions={state.functions}
-                  />
+                    className={`cmd-tab-panel ${activeCmdTab === config.id ? 'is-active' : ''}`}
+                  >
+                    <Program
+                      programId={config.id}
+                      title={funcData.name}
+                      limitText={`(${funcData.program.length}/${config.maxCommands})`}
+                      onTitleChange={(newName) => dispatch({
+                        type: 'RENAME_FUNC',
+                        funcId: config.id,
+                        newName: newName
+                      })}
+                      items={funcData.program}
+                      isFull={funcData.program.length >= config.maxCommands}
+                      onRemove={(cmdId) => dispatch({
+                        type: 'REMOVE_FROM_FUNC',
+                        funcId: config.id,
+                        id: cmdId
+                      })}
+                      functions={state.functions}
+                    />
+                  </div>
                 );
               })}
               <div className="spacer" />

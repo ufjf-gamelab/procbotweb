@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(awk 'NR==907,NR==1200{print NR\": \"$0}' /Users/rafaelaoliveiradesouza/Documents/ufjf/tcc/procbotweb/src/styles.css)",
+      "Bash(sips -g pixelWidth -g pixelHeight src/assets/fundo_home.jpg src/assets/fundo_laboratorio.jpg)",
+      "Bash(python3 -c \"import PIL; print\\(PIL.__version__\\)\")",
+      "Bash(pip3 --version)",
+      "Bash(sips -g pixelWidth -g pixelHeight fundo_home.jpg)"
+    ]
+  }
+}

@@ -4,8 +4,8 @@ import { AiFillLock,
   AiOutlineHome,
   AiFillStar
  } from "react-icons/ai";
+ import { BsRobot } from "react-icons/bs";
  import robotTip from "../assets/robot_tip.png";
- import robotFace from "../assets/robot_face.png";
 
 type Props = {
   onSelectLevel: (level: Level) => void;
@@ -68,12 +68,8 @@ export function LevelSelect({ onSelectLevel, completedLevels }: Props) {
                 {level.id}
               </span>
               {!isLocked && (
-               <img
-                  src={robotFace}
-                  alt="robot"
-                  className="level-robot"
-                />
-        )}
+                <BsRobot className="level-robot" />
+              )}
               {isLocked ? (
                 <AiFillLock
                   className="lock-icon"
