@@ -13,30 +13,37 @@ import { allLevels } from './game/levels';
 import { LevelSelect } from './components/LevelSelect';
 import { arrayMove } from '@dnd-kit/sortable';
 import { reducer, initialState } from './game/reducer';
+import { loadSession, saveSession, restoreGameState } from './game/persistence';
+import { computeStars, totalCommandsUsed } from './game/scoring';
 import { Palette } from './components/Palette';
 import { Program } from './components/Program';
 import { Command } from './components/Command';
 import { Board } from './components/Board';
 import { WinModal } from './components/WinModal';
+import { RotateOverlay } from './components/RotateOverlay';
 import type { Cmd, CmdKind } from './game/types';
-import { 
-  AiFillPlayCircle, 
-  AiOutlineDelete, 
-  AiOutlineReload,
+import {
   AiOutlineHome,
   AiFillStar
 } from "react-icons/ai";
+import {
+  GiPlayButton,
+  GiBroom,
+  GiCycle
+} from "react-icons/gi";
 import './styles.css';
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export default function App() {
   // const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
-  const [completedLevels, setCompletedLevels] = useState<string[]>(["1","2","3","4","5"]);
+  const [saved] = useState(() => loadSession());
+  const [completedLevels, setCompletedLevels] = useState<string[]>(saved?.completedLevels ?? ["1","2","3","4","5"]);
+  const [levelStars, setLevelStars] = useState<Record<string, number>>(saved?.levelStars ?? {});
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, undefined, () => restoreGameState(saved) ?? initialState);
   const [showWinModal, setShowWinModal] = useState(false);
-  const [view, setView] = useState<'MENU' | 'GAME'>('MENU');
+  const [view, setView] = useState<'MENU' | 'GAME'>(saved?.view ?? 'MENU');
   const [mascotTip, setMascotTip] = useState("Vamos lá! Arraste os comandos para o Programa Principal.");
   const [mascotTipOpen, setMascotTipOpen] = useState(true);
   const [activeCmdTab, setActiveCmdTab] = useState<string>('main');
@@ -44,10 +51,29 @@ export default function App() {
   useEffect(() => { stateRef.current = state; }, [state]);
 
   useEffect(() => {
+    saveSession({
+      completedLevels,
+      levelStars,
+      view,
+      levelId: state.level.id,
+      robot: state.robot,
+      lit: Array.from(state.lit),
+      program: state.program,
+      functions: state.functions,
+      stepIndex: state.stepIndex,
+    });
+  }, [completedLevels, levelStars, view, state]);
+
+  useEffect(() => {
     if (state.win) {
       if (!completedLevels.includes(state.level.id)) {
         setCompletedLevels(prev => [...prev, state.level.id]);
       }
+      const earnedStars = computeStars(state);
+      setLevelStars(prev => ({
+        ...prev,
+        [state.level.id]: Math.max(prev[state.level.id] ?? 0, earnedStars),
+      }));
       const timer = setTimeout(() => {
         setShowWinModal(true);
       }, 1000);
@@ -144,10 +170,10 @@ export default function App() {
     }
 
     if (activeId.startsWith('prog-') && activeId !== overId) {
-      const activeContainer = findContainer(activeId); 
-      
+      const activeContainer = findContainer(activeId);
+
       if (activeContainer && activeContainer === targetContainer) {
-          
+
           if (activeContainer === 'main') {
             const oldIndex = state.program.findIndex(c => `prog-${c.id}` === activeId);
             const newIndex = state.program.findIndex(c => `prog-${c.id}` === overId);
@@ -169,12 +195,43 @@ export default function App() {
               }
             }
           }
+      } else if (activeContainer && targetContainer && activeContainer !== targetContainer) {
+        const cmdId = activeId.replace('prog-', '');
+        const targetProgram = targetContainer === 'main'
+          ? state.program
+          : state.functions.find(f => f.id === targetContainer)?.program ?? [];
+
+        const overIsItem = overId.startsWith('prog-');
+        const overIndex = overIsItem ? targetProgram.findIndex(c => `prog-${c.id}` === overId) : -1;
+        const toIndex = overIndex === -1 ? targetProgram.length : overIndex;
+
+        dispatch({ type: 'MOVE_COMMAND', fromContainer: activeContainer, toContainer: targetContainer, cmdId, toIndex });
       }
     }
   }
 
   function handleAddByClick(kind: CmdKind) {
-    dispatch({ type: 'ADD_TO_MAIN', kind });
+    if (activeCmdTab === 'main') {
+      dispatch({ type: 'ADD_TO_MAIN', kind });
+    } else {
+      dispatch({ type: 'ADD_TO_FUNC', funcId: activeCmdTab, kind });
+    }
+  }
+
+  function handleAddFunction() {
+    const extraCount = state.functions.length - state.level.functionsConfig.length;
+    const maxExtra = state.level.maxExtraFunctions ?? 0;
+    if (extraCount >= maxExtra) return;
+
+    const id = `custom-${crypto.randomUUID().slice(0, 8)}`;
+    const name = `F${state.functions.length + 1}`;
+    dispatch({ type: 'ADD_FUNCTION', id, name, maxCommands: 5 });
+    setActiveCmdTab(id);
+  }
+
+  function handleRemoveFunction(funcId: string) {
+    dispatch({ type: 'REMOVE_FUNCTION', funcId });
+    if (activeCmdTab === funcId) setActiveCmdTab('main');
   }
   const currentRealIndex = allLevels.findIndex(l => l.id === state.level.id);
   const isLastLevel = currentRealIndex === allLevels.length - 1;
@@ -207,15 +264,17 @@ export default function App() {
 
   const limitMain = state.level.maxMain ?? 99;
   const countMain = state.program.length;
+  const currentStars = computeStars(state);
+  const canAddCustomFunction =
+    (state.functions.length - state.level.functionsConfig.length) < (state.level.maxExtraFunctions ?? 0);
 
   if (view === 'MENU') {
     return (
       <>
-        <div id="rotate-overlay">Gire o aparelho para jogar</div>
-        
-        <LevelSelect 
+        <LevelSelect
           onSelectLevel={handleSelectLevel}
           completedLevels={completedLevels}
+          levelStars={levelStars}
         />
       </>
     );
@@ -223,11 +282,11 @@ export default function App() {
 
   return (
     <>
-      <div id="rotate-overlay">Gire o aparelho para jogar</div>
- 
-      <WinModal 
+
+      <WinModal
               isOpen={showWinModal}
-              stepsCount={state.program.length}
+              stepsCount={totalCommandsUsed(state)}
+              stars={computeStars(state)}
               isLastLevel={isLastLevel}
               onNextLevel={handleNextLevel}
               onReplay={handleReplay}
@@ -239,8 +298,9 @@ export default function App() {
       </div>
 
         <header className="game-header">
-        <div className="header-left">
-          <button 
+        <div className="header-center">
+          <button
+            className="home-btn"
             onClick={handleBackToMenu}>
             <AiOutlineHome size={18} />
           </button>
@@ -250,14 +310,7 @@ export default function App() {
           </div>
           <div className="status-badge stars-badge">
             <AiFillStar className="icon-star" />
-            <span>2 / 3</span>
-          </div>
-        </div>
-
-        <div className="header-right">
-          <div className="status-badge score-badge">
-            <div className="coin-icon">G</div>
-            <span>120</span>
+            <span>{currentStars} / 3</span>
           </div>
         </div>
       </header>
@@ -279,7 +332,7 @@ export default function App() {
               onClick={() => setMascotTipOpen(open => !open)}
             />
 
-            <div className="speech-bubble">
+            <div className="speech-bubble" key={mascotTip}>
               <p>{mascotTip}</p>
             </div>
           </div>
@@ -289,30 +342,30 @@ export default function App() {
             <Board level={state.level} robot={state.robot} lit={state.lit} />
             <div className="controls-wrap">
                 <div className="btns">
-                  <button 
-                    onClick={handleRun} 
+                  <button
+                    onClick={handleRun}
                     disabled={state.running || state.program.length === 0}
-                    className="btn-action"
+                    className="btn-action btn-run"
                   >
-                    <AiFillPlayCircle size={18} />
+                    <GiPlayButton size={18} />
                     <span>Executar</span>
                   </button>
 
-                  <button 
-                    onClick={() => dispatch({ type: 'resetProgram' })} 
+                  <button
+                    onClick={() => dispatch({ type: 'resetProgram' })}
                     disabled={state.running}
-                    className="btn-action"
+                    className="btn-action btn-clear"
                   >
-                    <AiOutlineDelete size={18} />
+                    <GiBroom size={18} />
                     <span>Limpar</span>
                   </button>
 
-                  <button 
-                    onClick={() => dispatch({ type: 'resetLevel' })} 
+                  <button
+                    onClick={() => dispatch({ type: 'resetLevel' })}
                     disabled={state.running}
-                    className="btn-action"
+                    className="btn-action btn-reset"
                   >
-                    <AiOutlineReload size={18} />
+                    <GiCycle size={18} />
                     <span>Reiniciar</span>
                   </button>
                 </div>
@@ -321,9 +374,9 @@ export default function App() {
 
           <div className="sidebar">
             <div className="left">
-              <Palette 
-                onCommandClick={(kind) => dispatch({ type: 'ADD_TO_MAIN', kind: kind as CmdKind })}
-                functions={state.functions} 
+              <Palette
+                onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
+                functions={state.functions}
               />
             </div>
             <div className="right">
@@ -333,22 +386,30 @@ export default function App() {
                   className={`cmd-tab ${activeCmdTab === 'main' ? 'is-active' : ''}`}
                   onClick={() => setActiveCmdTab('main')}
                 >
-                  Programa <span>{countMain}/{limitMain}</span>
+                  <span className="cmd-tab-label">Programa</span>
+                  <span className="cmd-tab-count">{countMain}/{limitMain}</span>
                 </button>
-                {state.level.functionsConfig.map((config) => {
-                  const funcData = state.functions.find(f => f.id === config.id);
-                  if (!funcData) return null;
-                  return (
-                    <button
-                      type="button"
-                      key={config.id}
-                      className={`cmd-tab ${activeCmdTab === config.id ? 'is-active' : ''}`}
-                      onClick={() => setActiveCmdTab(config.id)}
-                    >
-                      {funcData.name} <span>{funcData.program.length}/{config.maxCommands}</span>
-                    </button>
-                  );
-                })}
+                {state.functions.map((funcData) => (
+                  <button
+                    type="button"
+                    key={funcData.id}
+                    className={`cmd-tab ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
+                    onClick={() => setActiveCmdTab(funcData.id)}
+                  >
+                    <span className="cmd-tab-label">{funcData.name}</span>
+                    <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
+                  </button>
+                ))}
+                {canAddCustomFunction && (
+                  <button
+                    type="button"
+                    className="cmd-tab"
+                    onClick={handleAddFunction}
+                    title="Adicionar nova função"
+                  >
+                    +
+                  </button>
+                )}
               </div>
 
               <div className={`cmd-tab-panel ${activeCmdTab === 'main' ? 'is-active' : ''}`}>
@@ -360,39 +421,51 @@ export default function App() {
                     items={state.program}
                     onRemove={(id) => dispatch({ type: 'REMOVE_FROM_MAIN', id })}
                     functions={state.functions}
+                    isSelected={activeCmdTab === 'main'}
+                    onSelect={() => setActiveCmdTab('main')}
                   />
               </div>
-              {state.level.functionsConfig.map((config) => {
-                const funcData = state.functions.find(f => f.id === config.id);
-
-                if (!funcData) return null;
+              {state.functions.map((funcData) => {
+                const isCustom = !state.level.functionsConfig.some(c => c.id === funcData.id);
 
                 return (
                   <div
-                    key={config.id}
-                    className={`cmd-tab-panel ${activeCmdTab === config.id ? 'is-active' : ''}`}
+                    key={funcData.id}
+                    className={`cmd-tab-panel ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
                   >
                     <Program
-                      programId={config.id}
+                      programId={funcData.id}
                       title={funcData.name}
-                      limitText={`(${funcData.program.length}/${config.maxCommands})`}
+                      limitText={`(${funcData.program.length}/${funcData.maxCommands})`}
                       onTitleChange={(newName) => dispatch({
                         type: 'RENAME_FUNC',
-                        funcId: config.id,
+                        funcId: funcData.id,
                         newName: newName
                       })}
                       items={funcData.program}
-                      isFull={funcData.program.length >= config.maxCommands}
+                      isFull={funcData.program.length >= funcData.maxCommands}
                       onRemove={(cmdId) => dispatch({
                         type: 'REMOVE_FROM_FUNC',
-                        funcId: config.id,
+                        funcId: funcData.id,
                         id: cmdId
                       })}
                       functions={state.functions}
+                      isSelected={activeCmdTab === funcData.id}
+                      onSelect={() => setActiveCmdTab(funcData.id)}
+                      onDelete={isCustom && funcData.program.length === 0 ? () => handleRemoveFunction(funcData.id) : undefined}
                     />
                   </div>
                 );
               })}
+              {canAddCustomFunction && (
+                <button
+                  type="button"
+                  className="btn-action add-function-btn"
+                  onClick={handleAddFunction}
+                >
+                  <span>+ Nova função</span>
+                </button>
+              )}
               <div className="spacer" />
             </div>
           </div>

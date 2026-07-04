@@ -10,7 +10,8 @@ const initFunctionsState = (level: Level) => {
   return (level.functionsConfig || []).map(config => ({
     id: config.id,
     name: config.name,
-    program: [] as Cmd[]
+    program: [] as Cmd[],
+    maxCommands: config.maxCommands
   }));
 };
 
@@ -193,17 +194,16 @@ export function reducer(state: GameState, action: Action): GameState {
       };
 
     case 'ADD_TO_FUNC': {
-      const funcConfig = state.level.functionsConfig.find(f => f.id === action.funcId);
       const funcIndex = state.functions.findIndex(f => f.id === action.funcId);
-      
-      if (!funcConfig || funcIndex === -1) return state;
+
+      if (funcIndex === -1) return state;
 
       const funcState = state.functions[funcIndex];
 
-      if (funcState.program.length >= funcConfig.maxCommands) return state;
+      if (funcState.program.length >= funcState.maxCommands) return state;
 
-      if (action.kind === action.funcId) {
-        alert("Nesta versão, uma função não pode chamar a si mesma!"); 
+      if (action.kind.toUpperCase() === `CALL_${action.funcId.toUpperCase()}`) {
+        alert("Nesta versão, uma função não pode chamar a si mesma!");
         return state;
       }
 
@@ -253,6 +253,62 @@ export function reducer(state: GameState, action: Action): GameState {
       };
 
       return { ...state, functions: newFunctions };
+    }
+
+    case 'MOVE_COMMAND': {
+      const { fromContainer, toContainer, cmdId, toIndex } = action;
+      if (fromContainer === toContainer) return state;
+
+      const getProgram = (containerId: string) =>
+        containerId === 'main' ? state.program : state.functions.find(f => f.id === containerId)?.program;
+
+      const sourceProgram = getProgram(fromContainer);
+      const cmd = sourceProgram?.find(c => c.id === cmdId);
+      if (!sourceProgram || !cmd) return state;
+
+      if (toContainer !== 'main' && cmd.kind.toUpperCase() === `CALL_${toContainer.toUpperCase()}`) {
+        alert("Nesta versão, uma função não pode chamar a si mesma!");
+        return state;
+      }
+
+      const targetLimit = toContainer === 'main'
+        ? (state.level.maxMain ?? 99)
+        : state.functions.find(f => f.id === toContainer)?.maxCommands ?? 99;
+
+      const targetProgram = getProgram(toContainer);
+      if (!targetProgram || targetProgram.length >= targetLimit) return state;
+
+      const newSourceProgram = sourceProgram.filter(c => c.id !== cmdId);
+      const newTargetProgram = targetProgram.slice();
+      newTargetProgram.splice(Math.min(toIndex, newTargetProgram.length), 0, cmd);
+
+      const applyProgram = (s: GameState, containerId: string, program: Cmd[]): GameState =>
+        containerId === 'main'
+          ? { ...s, program }
+          : { ...s, functions: s.functions.map(f => f.id === containerId ? { ...f, program } : f) };
+
+      let next = applyProgram(state, fromContainer, newSourceProgram);
+      next = applyProgram(next, toContainer, newTargetProgram);
+      return next;
+    }
+
+    case 'ADD_FUNCTION': {
+      const extraCount = state.functions.length - state.level.functionsConfig.length;
+      const maxExtra = state.level.maxExtraFunctions ?? 0;
+      if (extraCount >= maxExtra) return state;
+
+      return {
+        ...state,
+        functions: [...state.functions, { id: action.id, name: action.name, program: [], maxCommands: action.maxCommands }]
+      };
+    }
+
+    case 'REMOVE_FUNCTION': {
+      const isBaseFunction = state.level.functionsConfig.some(c => c.id === action.funcId);
+      const funcState = state.functions.find(f => f.id === action.funcId);
+      if (isBaseFunction || !funcState || funcState.program.length > 0) return state;
+
+      return { ...state, functions: state.functions.filter(f => f.id !== action.funcId) };
     }
 
     default: return state;

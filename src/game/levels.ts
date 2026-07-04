@@ -8,6 +8,7 @@ export const level1: Level = {
   lamps: [{ x: 3, y: 1 }],
   maxMain: 10,
   functionsConfig: [],
+  optimalCommands: 4,
 };
 
 export const level2: Level = {
@@ -18,6 +19,7 @@ export const level2: Level = {
   lamps: [{ x: 2, y: 2 }],
   maxMain: 10,
   functionsConfig: [],
+  optimalCommands: 6,
 };
 
 export const level3: Level = {
@@ -28,6 +30,7 @@ export const level3: Level = {
   lamps: [{ x: 1, y: 3 }, { x: 2, y: 2 }],
   maxMain: 10,
   functionsConfig: [],
+  optimalCommands: 8,
 };
 
 export const level4: Level = {
@@ -40,6 +43,7 @@ export const level4: Level = {
   functionsConfig: [
     { id: 'f1', name: 'F1', maxCommands: 5 }
   ],
+  optimalCommands: 8,
 };
 
 export const level5: Level = {
@@ -52,6 +56,7 @@ export const level5: Level = {
   functionsConfig: [
     { id: 'f1', name: 'F1', maxCommands: 4 }
   ],
+  optimalCommands: 6,
 };
 
 export const level6: Level = {
@@ -64,6 +69,7 @@ export const level6: Level = {
   functionsConfig: [
     { id: 'f1', name: 'F1', maxCommands: 5 }
   ],
+  optimalCommands: 8,
 };
 
 export const level7: Level = {
@@ -76,6 +82,7 @@ export const level7: Level = {
   functionsConfig: [
     { id: 'f1', name: 'F1', maxCommands: 9 }
   ],
+  optimalCommands: 13,
 };
 
 export const level8: Level = {
@@ -87,8 +94,10 @@ export const level8: Level = {
   maxMain: 6,
   functionsConfig: [
     { id: 'f1', name: 'F1', maxCommands: 6 },
-    { id: 'f2', name: 'F2', maxCommands: 4 } 
+    { id: 'f2', name: 'F2', maxCommands: 4 }
   ],
+  maxExtraFunctions: 1,
+  optimalCommands: 10,
 };
 
 export const allLevels = [level1, level2, level3, level4, level5, level6, level7, level8];

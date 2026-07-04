@@ -7,9 +7,12 @@ export type Level = {
   id: string;
   width: number; height: number;
   start: { x: number; y: number; dir: Dir };
-  lamps: Pos[]; 
+  lamps: Pos[];
   maxMain?: number,
-  functionsConfig: { id: string; name: string; maxCommands: number }[];};
+  functionsConfig: { id: string; name: string; maxCommands: number }[];
+  maxExtraFunctions?: number;
+  optimalCommands: number;
+};
 
 export type FunctionDef = {
   name: string;
@@ -21,7 +24,7 @@ export type GameState = {
   robot: { x: number; y: number; dir: Dir };
   lit: Set<string>;
   program: Cmd[];
-  functions: { id: string; name: string; program: Cmd[] }[];
+  functions: { id: string; name: string; program: Cmd[]; maxCommands: number }[];
   stepIndex: number;
   running: boolean;
   win: boolean;
@@ -51,4 +54,7 @@ export type Action =
   | { type: 'REMOVE_FROM_FUNC'; funcId: string; id: string }
   | { type: 'SET_PROGRAM_FUNC'; funcId: string; program: Cmd[] }
   | { type: 'RENAME_FUNC'; funcId: string; newName: string }
+  | { type: 'MOVE_COMMAND'; fromContainer: string; toContainer: string; cmdId: string; toIndex: number }
+  | { type: 'ADD_FUNCTION'; id: string; name: string; maxCommands: number }
+  | { type: 'REMOVE_FUNCTION'; funcId: string }
 ;

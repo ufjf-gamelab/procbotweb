@@ -1,7 +1,7 @@
 import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import type { CmdKind } from '../game/types';
-import { CMD_CONFIG } from '../game/constants'; 
+import { CMD_CONFIG, FUNCTION_THEME } from '../game/constants';
 
 type Props = {
   kind: CmdKind;
@@ -12,8 +12,6 @@ type Props = {
   listeners?: SyntheticListenerMap;
   functionName?: string;
 };
-
-const FUNCTION_THEME_COLOR = '#a78bfa';
 
 export function Command({
   kind,
@@ -26,12 +24,12 @@ export function Command({
 }: Props) {
   const className = `block ${isDragging ? 'dragging' : ''}`;
 
-  const isFunction = String(kind).startsWith('CALL_');  
+  const isFunction = String(kind).startsWith('CALL_');
   let config;
 
   if (isFunction) {
     config = {
-      color: FUNCTION_THEME_COLOR,
+      ...FUNCTION_THEME,
       icon: <span style={{ fontStyle: 'italic', fontFamily: 'serif' }}>{functionName}</span>
     };
   } else {
@@ -41,7 +39,7 @@ export function Command({
   if (!config) return null;
 
   return (
-    <div 
+    <div
       className={className}
       {...attributes}
       {...listeners}
@@ -49,15 +47,18 @@ export function Command({
         if (onRemove) onRemove(id);
       }}
 
-      style={{ 
+      style={{
+        '--block-color': config.color,
+        '--block-dark': config.dark,
+        '--block-glow': config.glow,
         borderColor: isDragging ? config.color : undefined,
         cursor: 'grab',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '40px',
-        height: '100%' 
-      }}
+        height: '100%'
+      } as React.CSSProperties}
       title={`Arrastar para mover, Clique para remover`}
     >
       <span style={{ color: config.color, display: 'flex', fontSize: '24px' }}>

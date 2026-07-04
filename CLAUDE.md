@@ -2,6 +2,10 @@
 
 Jogo web/mobile (TCC) pra ensinar pensamento computacional/lógico a crianças e adolescentes. Stack: Vite + React + TS. Base do `main` já funciona.
 
+## Sobre a aprência do jogo
+- O jogo deve sempre priorizar interfaces que sejam atrativas para o público infantil e que seja simples de manusear.
+- O jogo será usado princialmente em dispositivos mobiles, por isso, é importante que seja sempre responsivo e pensado para usabilidade em telas pequenas (tanto vertical, quanto horizontal).
+
 ## Preferências do usuário
 - Pouco limite de tokens — respostas curtas, direto ao ponto, sem resumos longos.
 - Não adicionar comentários no código.
@@ -23,3 +27,4 @@ Troca de CSS + adição de imagens deixou o jogo lento. Causas e correções já
 ## Ambiente
 - Sem `chromium-cli`/Playwright instalados — não dá pra tirar screenshot do app rodando sem instalar antes.
 - `npm run build` atualmente falha no `tsc` por causa de 2 unused vars pré-existentes em `src/App.tsx` (`setMascotTip`, `handleAddByClick`) — não relacionado a CSS/imagens, não foi corrigido ainda.
+- rode `npm run lint` no final de edições e corija erros e warnings.

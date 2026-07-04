@@ -10,28 +10,24 @@ import { AiFillLock,
 type Props = {
   onSelectLevel: (level: Level) => void;
   completedLevels: string[];
+  levelStars: Record<string, number>;
 };
 
-export function LevelSelect({ onSelectLevel, completedLevels }: Props) {
+const LEVEL_ACCENTS = ['#06b6d4', '#a78bfa', '#fb923c', '#f472b6'];
+
+export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Props) {
+  const totalStars = Object.values(levelStars).reduce((sum, s) => sum + s, 0);
+
   return (
   <div className="level-page">
     
     <div className="level-bg-overlay" />
 
     <header className="levels-header">
-      <button className="home-button">
-        <AiOutlineHome size={22} />
-      </button>
-
       <div className="player-progress">
         <div className="progress-stars">
           <AiFillStar />
-          <span>12</span>
-        </div>
-
-        <div className="progress-coins">
-          <span>⚡</span>
-          <span>120</span>
+          <span>{totalStars}</span>
         </div>
       </div>
     </header>
@@ -40,7 +36,7 @@ export function LevelSelect({ onSelectLevel, completedLevels }: Props) {
       <h1>ESCOLHA UMA FASE</h1>
 
       <div className="levels-grid">
-        {allLevels.map((level) => {
+        {allLevels.map((level, index) => {
           const isCompleted = completedLevels.includes(level.id);
 
           const prevLevelCompleted =
@@ -50,6 +46,8 @@ export function LevelSelect({ onSelectLevel, completedLevels }: Props) {
             );
 
           const isLocked = !prevLevelCompleted;
+          const accent = LEVEL_ACCENTS[index % LEVEL_ACCENTS.length];
+          const starsEarned = levelStars[level.id] ?? 0;
 
           return (
             <button
@@ -59,6 +57,7 @@ export function LevelSelect({ onSelectLevel, completedLevels }: Props) {
                 ${isCompleted ? "completed" : ""}
                 ${isLocked ? "locked" : ""}
               `}
+              style={{ '--level-accent': accent } as React.CSSProperties}
               onClick={() =>
                 !isLocked && onSelectLevel(level)
               }
@@ -76,8 +75,15 @@ export function LevelSelect({ onSelectLevel, completedLevels }: Props) {
                   size={26}
                 />
               ) : (
-                <div className="stars-row">
-                  {isCompleted ? "⭐" : ""}
+                <div className="level-footer">
+                  <div className="level-lamps">
+                    {level.lamps.map((_, i) => (
+                      <span key={i} className="mini-lamp" />
+                    ))}
+                  </div>
+                  <div className="stars-row">
+                    {isCompleted ? "⭐".repeat(starsEarned).padEnd(3, "☆") : ""}
+                  </div>
                 </div>
               )}
             </button>

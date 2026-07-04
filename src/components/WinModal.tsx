@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import Confetti from 'react-confetti';
 import { useEffect, useState } from 'react';
 
-import { AiFillHome, AiOutlineRedo, AiOutlineArrowRight } from "react-icons/ai";
+import { AiFillHome, AiOutlineRedo, AiOutlineArrowRight, AiFillStar, AiOutlineStar } from "react-icons/ai";
 
 type Props = {
   isOpen: boolean;
@@ -11,9 +11,10 @@ type Props = {
   onReplay: () => void;
   isLastLevel: boolean;
   stepsCount: number;
+  stars: 1 | 2 | 3;
 };
 
-export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, stepsCount }: Props) {
+export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, stepsCount, stars }: Props) {
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
   useEffect(() => {
@@ -35,7 +36,15 @@ export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, s
         transition={{ type: "spring", bounce: 0.5 }}
       >
         <h1>Parabéns!</h1>
-        
+
+        <div className="win-stars">
+          {[1, 2, 3].map(i => (
+            i <= stars
+              ? <AiFillStar key={i} className="icon-star" size={36} />
+              : <AiOutlineStar key={i} className="icon-star" size={36} />
+          ))}
+        </div>
+
         <div className="win-stats">
           <p>Você completou o desafio!</p>
           <div className="stat-box">

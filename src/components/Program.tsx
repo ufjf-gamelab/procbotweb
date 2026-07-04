@@ -1,9 +1,11 @@
 import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { useRef } from 'react';
+import clsx from 'clsx';
+import { AiOutlineDelete } from 'react-icons/ai';
 import {
   SortableContext,
   useSortable,
-  verticalListSortingStrategy
+  rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Cmd } from '../game/types';
@@ -45,12 +47,15 @@ function SortableCommandItem({ item, onRemove, functionName }: { item: Cmd; onRe
 }
 
 
-export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions }: 
-  { programId: string; title: string; limitText: string; 
-    onTitleChange?: (newName: string) => void; 
+export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions, isSelected, onSelect, onDelete }:
+  { programId: string; title: string; limitText: string;
+    onTitleChange?: (newName: string) => void;
     isFull: boolean;
     items: Cmd[], onRemove: (id: string)=>void;
   functions?: { id: string; name: string; program: Cmd[] }[];
+  isSelected?: boolean;
+  onSelect?: () => void;
+  onDelete?: () => void;
  }) {
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,8 +64,8 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
   });
 
   const { over } = useDndContext();
-  const isOverContainer = 
-    over?.id === `program-drop-${programId}` || 
+  const isOverContainer =
+    over?.id === `program-drop-${programId}` ||
     items.some(cmd => `prog-${cmd.id}` === over?.id);
 
   let dropClassName = "program-list";
@@ -69,8 +74,8 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
   }
 
   return (
-    <section className="panel">
-      <h3>
+    <section className={clsx('panel', isSelected && 'is-target')}>
+      <h3 onClick={onSelect} style={onSelect ? { cursor: 'pointer' } : undefined}>
         {onTitleChange ? (
           <div className="editable-title-wrapper" onClick={() => inputRef.current?.focus()}>
             <svg className="edit-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -95,6 +100,17 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
             {limitText}
           </span>
         )}
+
+        {onDelete && (
+          <button
+            type="button"
+            className="delete-function-btn"
+            title="Remover função"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          >
+            <AiOutlineDelete size={14} />
+          </button>
+        )}
       </h3>
       <div
         ref={setNodeRef}
@@ -104,7 +120,7 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
           outlineOffset: '2px',
         }}
       >
-       <SortableContext items={items.map(i => `prog-${i.id}`)} strategy={verticalListSortingStrategy}>
+       <SortableContext items={items.map(i => `prog-${i.id}`)} strategy={rectSortingStrategy}>
           {items.map((cmd) => {
             const isFunction = String(cmd.kind).startsWith('CALL_');
             let funcData;

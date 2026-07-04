@@ -1,7 +1,7 @@
 import type { Level } from '../game/types';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
-import { type JSX, useState, useEffect } from 'react';
+import { type JSX, useState, useEffect, useRef } from 'react';
 
 import robotFront from '../assets/robot_idle.png';
 import robotBack from '../assets/robot_back.png';
@@ -17,17 +17,34 @@ export function Board({
 }) {
   const cells: JSX.Element[] = [];
   const [celebrating, setCelebrating] = useState(false);
+  const [moveEffect, setMoveEffect] = useState<'step' | 'turn' | null>(null);
+  const prevRobotRef = useRef({ x: robot.x, y: robot.y, dir: robot.dir });
+  const prevLitRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const currentKey = `${robot.x},${robot.y}`;
-    if (lit.has(currentKey)) {
+    const justLit = lit.has(currentKey) && !prevLitRef.current.has(currentKey);
+    prevLitRef.current = lit;
+
+    if (justLit) {
       setCelebrating(true);
       const timer = setTimeout(() => setCelebrating(false), 400);
       return () => clearTimeout(timer);
-    } else {
-      setCelebrating(false);
     }
   }, [robot.x, robot.y, lit]);
+
+  useEffect(() => {
+    const prev = prevRobotRef.current;
+    const moved = prev.x !== robot.x || prev.y !== robot.y;
+    const turned = !moved && prev.dir !== robot.dir;
+    prevRobotRef.current = { x: robot.x, y: robot.y, dir: robot.dir };
+
+    if (!moved && !turned) return;
+
+    setMoveEffect(moved ? 'step' : 'turn');
+    const timer = setTimeout(() => setMoveEffect(null), 420);
+    return () => clearTimeout(timer);
+  }, [robot.x, robot.y, robot.dir]);
 
   const getRobotAsset = (dir: number, isHappy: boolean) => {
     const baseStyle: React.CSSProperties = {
@@ -70,35 +87,49 @@ export function Board({
       cells.push(
         <div 
           key={`${x}-${y}`} 
-          className={clsx('cell', lamp && (isLit ? 'lamp-lit' : 'lamp'))}
+          className={clsx('cell', lamp && (isLit ? 'lamp-lit' : 'lamp'), isRobotHere && 'robot-here')}
           style={{ position: 'relative' }}
         >
           {isRobotHere && (
             <motion.div
               layoutId="robot-actor"
-              animate={showJump ? { y: [0, -30, 0] } : { y: 0 }}
-              transition={showJump 
-                ? { duration: 0.4, times: [0, 0.5, 1] } 
-                : { type: "spring", stiffness: 300, damping: 30 }
-              }
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                position: 'relative', 
-                zIndex: 20 
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              style={{
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+                zIndex: 20
               }}
             >
-              {(() => {
-                const { src, style } = getRobotAsset(robot.dir, showJump);
-                return (
-                  <img 
-                    src={src} 
-                    alt="Robô"
-                    className="robot-sprite"
-                    style={style}
-                  />
-                );
-              })()}
+              <motion.div
+                animate={
+                  showJump
+                    ? { y: [0, -30, 0], rotate: 0, scaleY: 1 }
+                    : moveEffect === 'step'
+                      ? { y: [0, -6, 0], scaleY: [1, 0.96, 1] }
+                      : { y: 0, rotate: 0, scaleY: 1 }
+                }
+                transition={
+                  showJump
+                    ? { duration: 0.4, times: [0, 0.5, 1] }
+                    : moveEffect === 'step'
+                      ? { duration: 0.42, ease: "easeInOut" }
+                      : { type: "spring", stiffness: 300, damping: 30 }
+                }
+                style={{ width: '100%', height: '100%', position: 'relative' }}
+              >
+                {(() => {
+                  const { src, style } = getRobotAsset(robot.dir, showJump);
+                  return (
+                    <img
+                      src={src}
+                      alt="Robô"
+                      className="robot-sprite"
+                      style={style}
+                    />
+                  );
+                })()}
+              </motion.div>
             </motion.div>
           )}
 

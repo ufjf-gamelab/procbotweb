@@ -6,7 +6,27 @@
       "Bash(sips -g pixelWidth -g pixelHeight src/assets/fundo_home.jpg src/assets/fundo_laboratorio.jpg)",
       "Bash(python3 -c \"import PIL; print\\(PIL.__version__\\)\")",
       "Bash(pip3 --version)",
-      "Bash(sips -g pixelWidth -g pixelHeight fundo_home.jpg)"
+      "Bash(sips -g pixelWidth -g pixelHeight fundo_home.jpg)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5174/procbotweb/)",
+      "Bash(mkdir -p node_modules)",
+      "Bash(ln -sf /Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/node_modules/playwright node_modules/playwright)",
+      "Bash(ln -sf /Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/node_modules/playwright-core node_modules/playwright-core)",
+      "Bash(tail -20 /tmp/vite.log)",
+      "Read(//private/tmp/**)",
+      "Bash(cp /tmp/styles.css.orig src/styles.css)",
+      "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
+      "Bash(curl -s -o /tmp/styles_served.css -w \"%{http_code}\\\\n\" http://localhost:5173/src/styles.css)",
+      "Read(//tmp/**)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(curl -sv http://localhost:5173/)",
+      "Bash(curl -s http://localhost:5173/procbotweb/)",
+      "Bash(curl -s -o /tmp/s.css -w \"%{http_code}\\\\n\" \"http://localhost:5173/procbotweb/src/styles.css\")",
+      "Bash(grep -o *)",
+      "Bash(curl -sI \"http://localhost:5173/procbotweb/src/styles.css\")"
+    ],
+    "additionalDirectories": [
+      "/private/tmp"
     ]
   }
 }
