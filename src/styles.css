@@ -152,6 +152,61 @@ html,
   justify-content: center;
 }
 
+.loop-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.loop-badge {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.loop-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.loop-back-btn {
+  padding: 8px 12px;
+  gap: 6px;
+}
+
+.loop-times-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #f472b6;
+}
+
+.loop-times-stepper button {
+  padding: 6px;
+}
+
+.loop-times-stepper strong {
+  min-width: 20px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.loop-delete-btn {
+  padding: 8px 12px;
+  gap: 6px;
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.loop-delete-btn:hover {
+  background: rgba(248, 113, 113, 0.15);
+}
+
 .palette-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

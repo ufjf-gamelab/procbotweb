@@ -1,16 +1,18 @@
 import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import type { CmdKind } from '../game/types';
-import { CMD_CONFIG, FUNCTION_THEME } from '../game/constants';
+import { CMD_CONFIG, FUNCTION_THEME, LOOP_THEME } from '../game/constants';
 
 type Props = {
   kind: CmdKind;
   id: string;
   isDragging?: boolean;
   onRemove?: (id: string) => void;
+  onOpen?: () => void;
   attributes?: DraggableAttributes;
   listeners?: SyntheticListenerMap;
   functionName?: string;
+  loopTimes?: number;
 };
 
 export function Command({
@@ -18,13 +20,16 @@ export function Command({
   id,
   isDragging = false,
   onRemove,
+  onOpen,
   attributes,
   listeners,
-  functionName
+  functionName,
+  loopTimes
 }: Props) {
   const className = `block ${isDragging ? 'dragging' : ''}`;
 
   const isFunction = String(kind).startsWith('CALL_');
+  const isLoop = String(kind).startsWith('LOOP_');
   let config;
 
   if (isFunction) {
@@ -32,6 +37,8 @@ export function Command({
       ...FUNCTION_THEME,
       icon: <span style={{ fontStyle: 'italic', fontFamily: 'serif' }}>{functionName}</span>
     };
+  } else if (isLoop || String(kind) === 'REPEAT_NEW') {
+    config = LOOP_THEME;
   } else {
     config = CMD_CONFIG[kind]
   }
@@ -44,7 +51,11 @@ export function Command({
       {...attributes}
       {...listeners}
       onClick={() => {
-        if (onRemove) onRemove(id);
+        if (isLoop && onOpen) {
+          onOpen();
+        } else if (onRemove) {
+          onRemove(id);
+        }
       }}
 
       style={{
@@ -57,14 +68,20 @@ export function Command({
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '40px',
-        height: '100%'
+        height: '100%',
+        position: 'relative'
       } as React.CSSProperties}
-      title={`Arrastar para mover, Clique para remover`}
+      title={isLoop ? 'Clique para editar o laço' : `Arrastar para mover, Clique para remover`}
     >
       <span style={{ color: config.color, display: 'flex', fontSize: '24px' }}>
         {isFunction ? (
           <span className="command-label">
             {functionName || config.icon}
+          </span>
+        ) : isLoop ? (
+          <span className="loop-label">
+            <span style={{ fontSize: '20px' }}>{config.icon}</span>
+            <span className="loop-badge">×{loopTimes ?? '?'}</span>
           </span>
         ) : (
           <span style={{ fontSize: '24px' }}>

@@ -23,10 +23,20 @@
       "Bash(curl -s http://localhost:5173/procbotweb/)",
       "Bash(curl -s -o /tmp/s.css -w \"%{http_code}\\\\n\" \"http://localhost:5173/procbotweb/src/styles.css\")",
       "Bash(grep -o *)",
-      "Bash(curl -sI \"http://localhost:5173/procbotweb/src/styles.css\")"
+      "Bash(curl -sI \"http://localhost:5173/procbotweb/src/styles.css\")",
+      "Bash(grep -iE '\\\\.\\(ts|tsx\\)$')",
+      "Bash(npm run *)",
+      "Bash(NODE_PATH=\"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/node_modules\" node \"/private/tmp/claude-501/-Users-rafaelaoliveiradesouza-Documents-ufjf-tcc-procbotweb/b3555442-3b6f-433d-8068-389553050c9b/scratchpad/test-loop.mjs\")",
+      "Bash(cp /private/tmp/claude-501/-Users-rafaelaoliveiradesouza-Documents-ufjf-tcc-procbotweb/b3555442-3b6f-433d-8068-389553050c9b/scratchpad/test-loop.mjs /Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-loop.mjs)",
+      "Bash(node /Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-loop.mjs)",
+      "Bash(cp \"/private/tmp/claude-501/-Users-rafaelaoliveiradesouza-Documents-ufjf-tcc-procbotweb/b3555442-3b6f-433d-8068-389553050c9b/scratchpad/test-loop.mjs\" \"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-loop.mjs\")",
+      "Bash(node \"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-loop.mjs\")",
+      "Bash(node \"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-delete-loop.mjs\")",
+      "Bash(pkill -f \"vite\" 2>/dev/null; rm -f \"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-delete-loop.mjs\"; echo done)"
     ],
     "additionalDirectories": [
-      "/private/tmp"
+      "/private/tmp",
+      "/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235"
     ]
   }
 }

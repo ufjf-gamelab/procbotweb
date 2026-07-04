@@ -11,7 +11,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Cmd } from '../game/types';
 import { Command } from './Command';
 
-function SortableCommandItem({ item, onRemove, functionName }: { item: Cmd; onRemove: (id: string) => void; functionName?: string }) {
+function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLoop }: { item: Cmd; onRemove: (id: string) => void; functionName?: string; loopTimes?: number; onOpenLoop?: () => void }) {
   const {
     attributes,
     listeners,
@@ -37,9 +37,11 @@ function SortableCommandItem({ item, onRemove, functionName }: { item: Cmd; onRe
         kind={item.kind}
         id={item.id}
         onRemove={onRemove}
+        onOpen={onOpenLoop}
         attributes={attributes}
         listeners={listeners}
         functionName={functionName}
+        loopTimes={loopTimes}
         isDragging={isDragging}
       />
     </div>
@@ -47,12 +49,14 @@ function SortableCommandItem({ item, onRemove, functionName }: { item: Cmd; onRe
 }
 
 
-export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions, isSelected, onSelect, onDelete }:
+export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete }:
   { programId: string; title: string; limitText: string;
     onTitleChange?: (newName: string) => void;
     isFull: boolean;
     items: Cmd[], onRemove: (id: string)=>void;
   functions?: { id: string; name: string; program: Cmd[] }[];
+  loops?: { id: string; times: number; program: Cmd[] }[];
+  onOpenLoop?: (loopId: string) => void;
   isSelected?: boolean;
   onSelect?: () => void;
   onDelete?: () => void;
@@ -123,19 +127,28 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
        <SortableContext items={items.map(i => `prog-${i.id}`)} strategy={rectSortingStrategy}>
           {items.map((cmd) => {
             const isFunction = String(cmd.kind).startsWith('CALL_');
+            const isLoop = String(cmd.kind).startsWith('LOOP_');
             let funcData;
+            let loopData: { id: string; times: number } | undefined;
 
             if (isFunction) {
               const funcId = String(cmd.kind).replace('CALL_', '');
               funcData = functions?.find(f => String(f.id).toUpperCase() === funcId.toUpperCase());
             }
-            
+
+            if (isLoop) {
+              const loopId = String(cmd.kind).replace('LOOP_', '');
+              loopData = loops?.find(l => l.id.toLowerCase() === loopId.toLowerCase());
+            }
+
             return (
               <SortableCommandItem
                 key={cmd.id}
                 item={cmd}
                 onRemove={() => onRemove(cmd.id)}
                 functionName={funcData?.name}
+                loopTimes={loopData?.times}
+                onOpenLoop={isLoop ? () => onOpenLoop?.(loopData?.id ?? String(cmd.kind).replace('LOOP_', '')) : undefined}
               />
             );
           })}

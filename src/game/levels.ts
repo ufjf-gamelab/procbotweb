@@ -74,7 +74,7 @@ export const level6: Level = {
 
 export const level7: Level = {
   id: '7',
-  width: 6, 
+  width: 6,
   height: 5,
   start: { x: 0, y: 0, dir: 1 },
   lamps: [{ x: 1, y: 2 }, { x: 3, y: 2 }, { x: 5, y: 2 }],
@@ -82,12 +82,13 @@ export const level7: Level = {
   functionsConfig: [
     { id: 'f1', name: 'F1', maxCommands: 9 }
   ],
+  loopsConfig: { maxLoops: 1, maxCommands: 4, minTimes: 2, maxTimes: 6 },
   optimalCommands: 13,
 };
 
 export const level8: Level = {
   id: '8',
-  width: 7, 
+  width: 7,
   height: 7,
   start: { x: 0, y: 0, dir: 1 },
   lamps: [{ x: 3, y: 0 }, { x: 6, y: 0 }, { x: 6, y: 3 }, { x: 6, y: 6 }, { x: 3, y: 6 }],
@@ -97,6 +98,7 @@ export const level8: Level = {
     { id: 'f2', name: 'F2', maxCommands: 4 }
   ],
   maxExtraFunctions: 1,
+  loopsConfig: { maxLoops: 1, maxCommands: 4, minTimes: 2, maxTimes: 6 },
   optimalCommands: 10,
 };
 

@@ -47,32 +47,39 @@ function PalItem({ kind, onCommandClick, dynamicLabel }: PalItemProps) {
 type PaletteProps = {
   onCommandClick: (kind: CmdKind| string) => void;
   functions: { id: string; name: string }[];
+  showLoopTile?: boolean;
 };
 
-export function Palette({onCommandClick, functions = []}: PaletteProps) {
+export function Palette({onCommandClick, functions = [], showLoopTile = false}: PaletteProps) {
   return (
     <section className="panel">
       <h3>Paleta de comandos</h3>
       <div className="palette-grid">
         {BASE_COMMANDS.map(k => (
-          <PalItem 
-            key={k} 
-            kind={k} 
-            onCommandClick={() => onCommandClick(k)} 
+          <PalItem
+            key={k}
+            kind={k}
+            onCommandClick={() => onCommandClick(k)}
           />
         ))}
         {functions.map(f => {
-          
-          const cmdKind = `CALL_${f.id.toUpperCase()}`; 
+
+          const cmdKind = `CALL_${f.id.toUpperCase()}`;
           return (
-            <PalItem 
-              key={f.id} 
-              kind={cmdKind} 
-              onCommandClick={() => onCommandClick(cmdKind)} 
-              dynamicLabel={f.name} 
+            <PalItem
+              key={f.id}
+              kind={cmdKind}
+              onCommandClick={() => onCommandClick(cmdKind)}
+              dynamicLabel={f.name}
             />
           );
         })}
+        {showLoopTile && (
+          <PalItem
+            kind="REPEAT_NEW"
+            onCommandClick={() => onCommandClick('REPEAT_NEW')}
+          />
+        )}
       </div>
     </section>
   );

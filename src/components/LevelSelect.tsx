@@ -1,7 +1,6 @@
 import { allLevels } from '../game/levels';
 import type { Level } from '../game/types';
 import { AiFillLock,
-  AiOutlineHome,
   AiFillStar
  } from "react-icons/ai";
  import { BsRobot } from "react-icons/bs";

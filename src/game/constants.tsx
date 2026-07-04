@@ -3,6 +3,7 @@ import {
     AiOutlineRotateRight,
     AiOutlineRotateLeft,
     AiOutlineBulb,
+    AiOutlineSync,
   } from "react-icons/ai";
   import type { CmdKind } from './types';
 
@@ -45,4 +46,12 @@ export const FUNCTION_THEME: CmdTheme = {
   color: '#a78bfa',
   dark: '#4c1d95',
   glow: 'rgba(167, 139, 250, 0.35)'
+};
+
+export const LOOP_THEME: CmdTheme = {
+  icon: <AiOutlineSync size={20} />,
+  label: 'Repetir',
+  color: '#f472b6',
+  dark: '#831843',
+  glow: 'rgba(244, 114, 182, 0.35)'
 };

@@ -1,8 +1,13 @@
-import type { Action, GameState, Cmd, CmdKind, Level } from './types';
+import type { Action, GameState, Cmd, CmdKind, Level, LoopDef, Dir } from './types';
 import { level8 } from './levels';
 
 const key = (x: number, y: number) => `${x},${y}`;
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+const cascadeRemoveLoop = (loops: LoopDef[], removedCmd?: Cmd): LoopDef[] =>
+  removedCmd?.kind.startsWith('LOOP_')
+    ? loops.filter(l => l.id.toLowerCase() !== removedCmd.kind.slice(5).toLowerCase())
+    : loops;
 
 const initialProgram: Cmd[] = [];
 
@@ -21,6 +26,7 @@ export const initialState: GameState = {
   lit: new Set<string>(),
   program: initialProgram,
   functions: initFunctionsState(level8),
+  loops: [],
   callStack: [],
   stepIndex: 0,
   running: false,
@@ -50,9 +56,9 @@ function applyCmd(state: GameState, kind: CmdKind): GameState {
     const ny = clamp(s.robot.y + dy, 0, s.level.height - 1);
     s.robot.x = nx; s.robot.y = ny; 
   } else if (kind === 'ESQUERDA') {
-    s.robot.dir = ((s.robot.dir + 3) % 4) as any;
+    s.robot.dir = ((s.robot.dir + 3) % 4) as Dir;
   } else if (kind === 'DIREITA') {
-    s.robot.dir = ((s.robot.dir + 1) % 4) as any;
+    s.robot.dir = ((s.robot.dir + 1) % 4) as Dir;
   } else if (kind === 'ACENDER') {
     if (s.level.lamps.some(p => p.x === s.robot.x && p.y === s.robot.y)) {
       s.lit.add(key(s.robot.x, s.robot.y));
@@ -82,21 +88,23 @@ export function reducer(state: GameState, action: Action): GameState {
     }
 
     case 'resetProgram':
-      return { 
-        ...state, 
-        program: [], 
+      return {
+        ...state,
+        program: [],
         functions: state.functions.map(f => ({ ...f, program: [] })), // Limpa TODAS as funções
-        stepIndex: 0, 
-        running: false, 
-        win: false 
+        loops: [],
+        stepIndex: 0,
+        running: false,
+        win: false
       };
-      
+
     case 'load_level':
       return {
         ...initialState,
         level: action.level,
         robot: { ...action.level.start },
         functions: initFunctionsState(action.level),
+        loops: [],
         program: [],
       };
       
@@ -127,11 +135,18 @@ export function reducer(state: GameState, action: Action): GameState {
       const currentContext = { ...stack[stack.length - 1] }; 
 
       if (currentContext.stepIndex >= currentContext.program.length) {
+        if (currentContext.remainingIterations && currentContext.remainingIterations > 1) {
+          currentContext.remainingIterations -= 1;
+          currentContext.stepIndex = 0;
+          stack[stack.length - 1] = currentContext;
+          return { ...state, callStack: stack };
+        }
+
         stack.pop();
         if (stack.length === 0) {
           return { ...state, running: false, callStack: [] };
         }
-        
+
         const parentContext = { ...stack[stack.length - 1] };
         parentContext.stepIndex += 1;
         stack[stack.length - 1] = parentContext;
@@ -140,11 +155,27 @@ export function reducer(state: GameState, action: Action): GameState {
 
       const cmd = currentContext.program[currentContext.stepIndex];
 
-      const funcIdFromCommand = cmd.kind.startsWith('CALL_') 
+      if (cmd.kind.startsWith('LOOP_')) {
+        const loopId = cmd.kind.slice(5);
+        const targetLoopState = state.loops.find(l =>
+          l.id.toString().toLowerCase() === loopId.toLowerCase()
+        );
+
+        if (!targetLoopState || targetLoopState.program.length === 0 || targetLoopState.times <= 0) {
+          currentContext.stepIndex += 1;
+          stack[stack.length - 1] = currentContext;
+          return { ...state, callStack: stack };
+        }
+
+        stack.push({ program: targetLoopState.program, stepIndex: 0, remainingIterations: targetLoopState.times });
+        return { ...state, callStack: stack };
+      }
+
+      const funcIdFromCommand = cmd.kind.startsWith('CALL_')
         ? cmd.kind.slice(5)
         : cmd.kind;
-      
-      const targetFuncState = state.functions.find(f => 
+
+      const targetFuncState = state.functions.find(f =>
         f.id.toString().toLowerCase() === funcIdFromCommand.toString().toLowerCase()
       );
       // ------------------------------------------
@@ -172,20 +203,24 @@ export function reducer(state: GameState, action: Action): GameState {
     }
 
 
-    case 'ADD_TO_MAIN':
-      var limit = state.level.maxMain ?? 99;
-      if (state.program.length >= limit) return state; 
-      
-      return { 
-        ...state, 
-        program: [...state.program, { id: crypto.randomUUID(), kind: action.kind }] 
-      };
+    case 'ADD_TO_MAIN': {
+      const limit = state.level.maxMain ?? 99;
+      if (state.program.length >= limit) return state;
 
-    case 'REMOVE_FROM_MAIN':
-      return { 
-        ...state, 
-        program: state.program.filter(c => c.id !== action.id) 
+      return {
+        ...state,
+        program: [...state.program, { id: crypto.randomUUID(), kind: action.kind }]
       };
+    }
+
+    case 'REMOVE_FROM_MAIN': {
+      const removedCmd = state.program.find(c => c.id === action.id);
+      return {
+        ...state,
+        program: state.program.filter(c => c.id !== action.id),
+        loops: cascadeRemoveLoop(state.loops, removedCmd),
+      };
+    }
 
     case 'SET_PROGRAM_MAIN':
       return { 
@@ -220,13 +255,14 @@ export function reducer(state: GameState, action: Action): GameState {
       const funcIndex = state.functions.findIndex(f => f.id === action.funcId);
       if (funcIndex === -1) return state;
 
+      const removedCmd = state.functions[funcIndex].program.find(c => c.id === action.id);
       const newFunctions = [...state.functions];
       newFunctions[funcIndex] = {
         ...newFunctions[funcIndex],
         program: newFunctions[funcIndex].program.filter(c => c.id !== action.id)
       };
 
-      return { ...state, functions: newFunctions };
+      return { ...state, functions: newFunctions, loops: cascadeRemoveLoop(state.loops, removedCmd) };
     }
 
     case 'SET_PROGRAM_FUNC': {
@@ -309,6 +345,90 @@ export function reducer(state: GameState, action: Action): GameState {
       if (isBaseFunction || !funcState || funcState.program.length > 0) return state;
 
       return { ...state, functions: state.functions.filter(f => f.id !== action.funcId) };
+    }
+
+    case 'ADD_LOOP': {
+      const loopsConfig = state.level.loopsConfig;
+      if (!loopsConfig) return state;
+      if (state.loops.length >= loopsConfig.maxLoops) return state;
+
+      const targetLimit = action.container === 'main'
+        ? (state.level.maxMain ?? 99)
+        : state.functions.find(f => f.id === action.container)?.maxCommands ?? 99;
+
+      const targetProgram = action.container === 'main'
+        ? state.program
+        : state.functions.find(f => f.id === action.container)?.program;
+
+      if (!targetProgram || targetProgram.length >= targetLimit) return state;
+
+      const loopId = `loop-${crypto.randomUUID().slice(0, 8)}`;
+      const newLoop: LoopDef = {
+        id: loopId,
+        times: loopsConfig.minTimes,
+        program: [],
+        maxCommands: loopsConfig.maxCommands,
+      };
+      const refCmd: Cmd = { id: crypto.randomUUID(), kind: `LOOP_${loopId}` as CmdKind };
+      const withLoop: GameState = { ...state, loops: [...state.loops, newLoop] };
+
+      return action.container === 'main'
+        ? { ...withLoop, program: [...withLoop.program, refCmd] }
+        : { ...withLoop, functions: withLoop.functions.map(f => f.id === action.container ? { ...f, program: [...f.program, refCmd] } : f) };
+    }
+
+    case 'ADD_TO_LOOP': {
+      const loopIndex = state.loops.findIndex(l => l.id === action.loopId);
+      if (loopIndex === -1) return state;
+
+      const loopState = state.loops[loopIndex];
+      if (loopState.program.length >= loopState.maxCommands) return state;
+
+      const newLoops = [...state.loops];
+      newLoops[loopIndex] = {
+        ...loopState,
+        program: [...loopState.program, { id: crypto.randomUUID(), kind: action.kind }]
+      };
+
+      return { ...state, loops: newLoops };
+    }
+
+    case 'REMOVE_FROM_LOOP': {
+      const loopIndex = state.loops.findIndex(l => l.id === action.loopId);
+      if (loopIndex === -1) return state;
+
+      const newLoops = [...state.loops];
+      newLoops[loopIndex] = {
+        ...newLoops[loopIndex],
+        program: newLoops[loopIndex].program.filter(c => c.id !== action.id)
+      };
+
+      return { ...state, loops: newLoops };
+    }
+
+    case 'SET_PROGRAM_LOOP': {
+      const loopIndex = state.loops.findIndex(l => l.id === action.loopId);
+      if (loopIndex === -1) return state;
+
+      const newLoops = [...state.loops];
+      newLoops[loopIndex] = { ...newLoops[loopIndex], program: action.program };
+
+      return { ...state, loops: newLoops };
+    }
+
+    case 'SET_LOOP_TIMES': {
+      const loopIndex = state.loops.findIndex(l => l.id === action.loopId);
+      if (loopIndex === -1) return state;
+
+      const loopsConfig = state.level.loopsConfig;
+      const min = loopsConfig?.minTimes ?? 1;
+      const max = loopsConfig?.maxTimes ?? 99;
+      const times = clamp(action.times, min, max);
+
+      const newLoops = [...state.loops];
+      newLoops[loopIndex] = { ...newLoops[loopIndex], times };
+
+      return { ...state, loops: newLoops };
     }
 
     default: return state;

@@ -12,6 +12,7 @@ export type PersistedSession = {
   lit: string[];
   program: GameState['program'];
   functions: GameState['functions'];
+  loops: GameState['loops'];
   stepIndex: number;
 };
 
@@ -45,6 +46,7 @@ export function restoreGameState(saved: PersistedSession | null): GameState | nu
     lit: new Set(saved.lit),
     program: saved.program,
     functions: saved.functions,
+    loops: saved.loops ?? [],
     callStack: [],
     stepIndex: saved.stepIndex ?? 0,
     running: false,

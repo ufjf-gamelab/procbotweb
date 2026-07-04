@@ -25,6 +25,7 @@ Troca de CSS + adição de imagens deixou o jogo lento. Causas e correções já
 - `vite.config.ts` tem `base: "/procbotweb/"` (GitHub Pages) — paths de asset em CSS são relativos ao arquivo CSS, não ao root.
 
 ## Ambiente
-- Sem `chromium-cli`/Playwright instalados — não dá pra tirar screenshot do app rodando sem instalar antes.
-- `npm run build` atualmente falha no `tsc` por causa de 2 unused vars pré-existentes em `src/App.tsx` (`setMascotTip`, `handleAddByClick`) — não relacionado a CSS/imagens, não foi corrigido ainda.
+- `chromium-cli` não está instalado, mas o pacote `playwright` (com Chromium já baixado em cache) fica disponível via `npx playwright` — dá pra escrever um script `_electron`-style (`import { chromium } from 'playwright'`) pra dirigir o app headless e tirar screenshot. `npx` resolve o pacote num diretório de cache próprio (`~/.npm/_npx/<hash>/node_modules`); rode o script de dentro desse diretório (ou copie pra lá) pra a resolução de módulos ESM encontrar o `playwright`.
+- `npm run build`/`npm run lint` passam limpos (0 erros). Restou só 1 warning pré-existente e inofensivo em `src/App.tsx` (`react-hooks/exhaustive-deps` no `useEffect` de `saveSession`).
+- Bug pré-existente (não introduzido por nenhuma feature recente, confirmado via `git stash`): em viewports desktop por volta de 1280×800, o tabuleiro (`.board-grid`) renderiza largo demais e visualmente sobrepõe a `.sidebar`, interceptando cliques em elementos do canto superior direito do painel direito. Não afeta portrait/landscape mobile nem viewports desktop mais largos (testado em 1800×900). Ainda não investigado a fundo nem corrigido.
 - rode `npm run lint` no final de edições e corija erros e warnings.

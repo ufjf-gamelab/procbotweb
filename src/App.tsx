@@ -20,7 +20,8 @@ import { Program } from './components/Program';
 import { Command } from './components/Command';
 import { Board } from './components/Board';
 import { WinModal } from './components/WinModal';
-import type { Cmd, CmdKind } from './game/types';
+import { LoopEditor } from './components/LoopEditor';
+import type { Cmd, CmdKind, Level } from './game/types';
 import {
   AiOutlineHome,
   AiFillStar
@@ -43,9 +44,10 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, undefined, () => restoreGameState(saved) ?? initialState);
   const [showWinModal, setShowWinModal] = useState(false);
   const [view, setView] = useState<'MENU' | 'GAME'>(saved?.view ?? 'MENU');
-  const [mascotTip, setMascotTip] = useState("Vamos lá! Arraste os comandos para o Programa Principal.");
+  const [mascotTip] = useState("Vamos lá! Arraste os comandos para o Programa Principal.");
   const [mascotTipOpen, setMascotTipOpen] = useState(true);
   const [activeCmdTab, setActiveCmdTab] = useState<string>('main');
+  const [openLoopId, setOpenLoopId] = useState<string | null>(null);
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
 
@@ -59,6 +61,7 @@ export default function App() {
       lit: Array.from(state.lit),
       program: state.program,
       functions: state.functions,
+      loops: state.loops,
       stepIndex: state.stepIndex,
     });
   }, [completedLevels, levelStars, view, state]);
@@ -118,7 +121,7 @@ export default function App() {
   setActiveId(String(e.active.id));
   }
 
-  function handleSelectLevel(level: any) {
+  function handleSelectLevel(level: Level) {
     dispatch({ type: 'load_level', level: level });
     setView('GAME');
   }
@@ -148,20 +151,54 @@ export default function App() {
 
       for (const func of state.functions) {
         if (func.program.find(i => `prog-${i.id}` === id)) {
-          return func.id; 
+          return func.id;
+        }
+      }
+
+      for (const loop of state.loops) {
+        if (loop.program.find(i => `prog-${i.id}` === id)) {
+          return loop.id;
         }
       }
 
       return null;
     }
 
+    function getContainerItems(containerId: string): Cmd[] {
+      if (containerId === 'main') return state.program;
+      const func = state.functions.find(f => f.id === containerId);
+      if (func) return func.program;
+      const loop = state.loops.find(l => l.id === containerId);
+      if (loop) return loop.program;
+      return [];
+    }
+
+    function dispatchSetProgram(containerId: string, program: Cmd[]) {
+      if (containerId === 'main') {
+        dispatch({ type: 'SET_PROGRAM_MAIN', program });
+      } else if (state.functions.find(f => f.id === containerId)) {
+        dispatch({ type: 'SET_PROGRAM_FUNC', funcId: containerId, program });
+      } else if (state.loops.find(l => l.id === containerId)) {
+        dispatch({ type: 'SET_PROGRAM_LOOP', loopId: containerId, program });
+      }
+    }
+
     const targetContainer = findContainer(overId);
 
     if (activeId.startsWith('pal-')) {
       const kind = activeId.replace('pal-', '') as CmdKind;
-      
+
+      if (String(kind) === 'REPEAT_NEW') {
+        if (targetContainer) {
+          dispatch({ type: 'ADD_LOOP', container: targetContainer });
+        }
+        return;
+      }
+
       if (targetContainer === 'main') {
         dispatch({ type: 'ADD_TO_MAIN', kind });
+      } else if (targetContainer && state.loops.find(l => l.id === targetContainer)) {
+        dispatch({ type: 'ADD_TO_LOOP', loopId: targetContainer, kind });
       } else if (targetContainer && targetContainer !== 'main') {
         dispatch({ type: 'ADD_TO_FUNC', funcId: targetContainer, kind });
       }
@@ -172,28 +209,14 @@ export default function App() {
       const activeContainer = findContainer(activeId);
 
       if (activeContainer && activeContainer === targetContainer) {
+        const containerItems = getContainerItems(activeContainer);
+        const oldIndex = containerItems.findIndex(c => `prog-${c.id}` === activeId);
+        const newIndex = containerItems.findIndex(c => `prog-${c.id}` === overId);
 
-          if (activeContainer === 'main') {
-            const oldIndex = state.program.findIndex(c => `prog-${c.id}` === activeId);
-            const newIndex = state.program.findIndex(c => `prog-${c.id}` === overId);
-
-            if (oldIndex !== -1 && newIndex !== -1) {
-              const newProgram = arrayMove(state.program, oldIndex, newIndex);
-              dispatch({ type: 'SET_PROGRAM_MAIN', program: newProgram });
-            }
-          }
-          else {
-            const funcState = state.functions.find(f => f.id === activeContainer);
-            if (funcState) {
-              const oldIndex = funcState.program.findIndex(c => `prog-${c.id}` === activeId);
-              const newIndex = funcState.program.findIndex(c => `prog-${c.id}` === overId);
-
-              if (oldIndex !== -1 && newIndex !== -1) {
-                const newProgram = arrayMove(funcState.program, oldIndex, newIndex);
-                dispatch({ type: 'SET_PROGRAM_FUNC', funcId: activeContainer, program: newProgram });
-              }
-            }
-          }
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newProgram = arrayMove(containerItems, oldIndex, newIndex);
+          dispatchSetProgram(activeContainer, newProgram);
+        }
       } else if (activeContainer && targetContainer && activeContainer !== targetContainer) {
         const cmdId = activeId.replace('prog-', '');
         const targetProgram = targetContainer === 'main'
@@ -210,11 +233,45 @@ export default function App() {
   }
 
   function handleAddByClick(kind: CmdKind) {
+    if (String(kind) === 'REPEAT_NEW') {
+      dispatch({ type: 'ADD_LOOP', container: activeCmdTab });
+      return;
+    }
     if (activeCmdTab === 'main') {
       dispatch({ type: 'ADD_TO_MAIN', kind });
     } else {
       dispatch({ type: 'ADD_TO_FUNC', funcId: activeCmdTab, kind });
     }
+  }
+
+  function handleAddToLoop(kind: CmdKind | string) {
+    if (!openLoopId) return;
+    dispatch({ type: 'ADD_TO_LOOP', loopId: openLoopId, kind: kind as CmdKind });
+  }
+
+  function handleOpenLoop(loopId: string) {
+    setOpenLoopId(loopId);
+  }
+
+  function handleCloseLoop() {
+    setOpenLoopId(null);
+  }
+
+  function handleDeleteLoop(loopId: string) {
+    const loopKind = `LOOP_${loopId}`;
+    const mainCmd = state.program.find(c => c.kind === loopKind);
+
+    if (mainCmd) {
+      dispatch({ type: 'REMOVE_FROM_MAIN', id: mainCmd.id });
+    } else {
+      const owner = state.functions.find(f => f.program.some(c => c.kind === loopKind));
+      const cmd = owner?.program.find(c => c.kind === loopKind);
+      if (owner && cmd) {
+        dispatch({ type: 'REMOVE_FROM_FUNC', funcId: owner.id, id: cmd.id });
+      }
+    }
+
+    setOpenLoopId(null);
   }
 
   function handleAddFunction() {
@@ -258,7 +315,8 @@ export default function App() {
   const activeCommand: Cmd | undefined = activeId
     ? (
       state.program.find(cmd => `prog-${cmd.id}` === activeId) ||
-      state.functions.flatMap(f => f.program).find(cmd => `prog-${cmd.id}` === activeId)
+      state.functions.flatMap(f => f.program).find(cmd => `prog-${cmd.id}` === activeId) ||
+      state.loops.flatMap(l => l.program).find(cmd => `prog-${cmd.id}` === activeId)
     ) : undefined;
 
   const limitMain = state.level.maxMain ?? 99;
@@ -266,6 +324,9 @@ export default function App() {
   const currentStars = computeStars(state);
   const canAddCustomFunction =
     (state.functions.length - state.level.functionsConfig.length) < (state.level.maxExtraFunctions ?? 0);
+  const loopsConfig = state.level.loopsConfig;
+  const canAddLoop = !!loopsConfig && state.loops.length < loopsConfig.maxLoops;
+  const openLoop = openLoopId ? state.loops.find(l => l.id === openLoopId) : undefined;
 
   if (view === 'MENU') {
     return (
@@ -372,100 +433,122 @@ export default function App() {
           </div>
 
           <div className="sidebar">
-            <div className="left">
-              <Palette
-                onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
-                functions={state.functions}
-              />
-            </div>
+            {!openLoop && (
+              <div className="left">
+                <Palette
+                  onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
+                  functions={state.functions}
+                  showLoopTile={canAddLoop}
+                />
+              </div>
+            )}
             <div className="right">
-              <div className="cmd-tabs">
-                <button
-                  type="button"
-                  className={`cmd-tab ${activeCmdTab === 'main' ? 'is-active' : ''}`}
-                  onClick={() => setActiveCmdTab('main')}
-                >
-                  <span className="cmd-tab-label">Programa</span>
-                  <span className="cmd-tab-count">{countMain}/{limitMain}</span>
-                </button>
-                {state.functions.map((funcData) => (
-                  <button
-                    type="button"
-                    key={funcData.id}
-                    className={`cmd-tab ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
-                    onClick={() => setActiveCmdTab(funcData.id)}
-                  >
-                    <span className="cmd-tab-label">{funcData.name}</span>
-                    <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
-                  </button>
-                ))}
-                {canAddCustomFunction && (
-                  <button
-                    type="button"
-                    className="cmd-tab"
-                    onClick={handleAddFunction}
-                    title="Adicionar nova função"
-                  >
-                    +
-                  </button>
-                )}
-              </div>
-
-              <div className={`cmd-tab-panel ${activeCmdTab === 'main' ? 'is-active' : ''}`}>
-                <Program
-                    programId="main"
-                    title="Programa Principal"
-                    limitText={`(${countMain}/${limitMain})`}
-                    isFull={countMain >= limitMain}
-                    items={state.program}
-                    onRemove={(id) => dispatch({ type: 'REMOVE_FROM_MAIN', id })}
-                    functions={state.functions}
-                    isSelected={activeCmdTab === 'main'}
-                    onSelect={() => setActiveCmdTab('main')}
-                  />
-              </div>
-              {state.functions.map((funcData) => {
-                const isCustom = !state.level.functionsConfig.some(c => c.id === funcData.id);
-
-                return (
-                  <div
-                    key={funcData.id}
-                    className={`cmd-tab-panel ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
-                  >
-                    <Program
-                      programId={funcData.id}
-                      title={funcData.name}
-                      limitText={`(${funcData.program.length}/${funcData.maxCommands})`}
-                      onTitleChange={(newName) => dispatch({
-                        type: 'RENAME_FUNC',
-                        funcId: funcData.id,
-                        newName: newName
-                      })}
-                      items={funcData.program}
-                      isFull={funcData.program.length >= funcData.maxCommands}
-                      onRemove={(cmdId) => dispatch({
-                        type: 'REMOVE_FROM_FUNC',
-                        funcId: funcData.id,
-                        id: cmdId
-                      })}
-                      functions={state.functions}
-                      isSelected={activeCmdTab === funcData.id}
-                      onSelect={() => setActiveCmdTab(funcData.id)}
-                      onDelete={isCustom && funcData.program.length === 0 ? () => handleRemoveFunction(funcData.id) : undefined}
-                    />
+              {openLoop ? (
+                <LoopEditor
+                  loop={openLoop}
+                  loopsConfig={loopsConfig!}
+                  functions={state.functions}
+                  onClose={handleCloseLoop}
+                  onAddCommand={handleAddToLoop}
+                  onRemoveCommand={(cmdId) => dispatch({ type: 'REMOVE_FROM_LOOP', loopId: openLoop.id, id: cmdId })}
+                  onSetTimes={(times) => dispatch({ type: 'SET_LOOP_TIMES', loopId: openLoop.id, times })}
+                  onDeleteLoop={() => handleDeleteLoop(openLoop.id)}
+                />
+              ) : (
+                <>
+                  <div className="cmd-tabs">
+                    <button
+                      type="button"
+                      className={`cmd-tab ${activeCmdTab === 'main' ? 'is-active' : ''}`}
+                      onClick={() => setActiveCmdTab('main')}
+                    >
+                      <span className="cmd-tab-label">Programa</span>
+                      <span className="cmd-tab-count">{countMain}/{limitMain}</span>
+                    </button>
+                    {state.functions.map((funcData) => (
+                      <button
+                        type="button"
+                        key={funcData.id}
+                        className={`cmd-tab ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
+                        onClick={() => setActiveCmdTab(funcData.id)}
+                      >
+                        <span className="cmd-tab-label">{funcData.name}</span>
+                        <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
+                      </button>
+                    ))}
+                    {canAddCustomFunction && (
+                      <button
+                        type="button"
+                        className="cmd-tab"
+                        onClick={handleAddFunction}
+                        title="Adicionar nova função"
+                      >
+                        +
+                      </button>
+                    )}
                   </div>
-                );
-              })}
-              {canAddCustomFunction && (
-                <button
-                  type="button"
-                  className="btn-action add-function-btn"
-                  onClick={handleAddFunction}
-                >
-                  <span>+ Nova função</span>
-                </button>
+
+                  <div className={`cmd-tab-panel ${activeCmdTab === 'main' ? 'is-active' : ''}`}>
+                    <Program
+                        programId="main"
+                        title="Programa Principal"
+                        limitText={`(${countMain}/${limitMain})`}
+                        isFull={countMain >= limitMain}
+                        items={state.program}
+                        onRemove={(id) => dispatch({ type: 'REMOVE_FROM_MAIN', id })}
+                        functions={state.functions}
+                        loops={state.loops}
+                        onOpenLoop={handleOpenLoop}
+                        isSelected={activeCmdTab === 'main'}
+                        onSelect={() => setActiveCmdTab('main')}
+                      />
+                  </div>
+                  {state.functions.map((funcData) => {
+                    const isCustom = !state.level.functionsConfig.some(c => c.id === funcData.id);
+
+                    return (
+                      <div
+                        key={funcData.id}
+                        className={`cmd-tab-panel ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
+                      >
+                        <Program
+                          programId={funcData.id}
+                          title={funcData.name}
+                          limitText={`(${funcData.program.length}/${funcData.maxCommands})`}
+                          onTitleChange={(newName) => dispatch({
+                            type: 'RENAME_FUNC',
+                            funcId: funcData.id,
+                            newName: newName
+                          })}
+                          items={funcData.program}
+                          isFull={funcData.program.length >= funcData.maxCommands}
+                          onRemove={(cmdId) => dispatch({
+                            type: 'REMOVE_FROM_FUNC',
+                            funcId: funcData.id,
+                            id: cmdId
+                          })}
+                          functions={state.functions}
+                          loops={state.loops}
+                          onOpenLoop={handleOpenLoop}
+                          isSelected={activeCmdTab === funcData.id}
+                          onSelect={() => setActiveCmdTab(funcData.id)}
+                          onDelete={isCustom && funcData.program.length === 0 ? () => handleRemoveFunction(funcData.id) : undefined}
+                        />
+                      </div>
+                    );
+                  })}
+                  {canAddCustomFunction && (
+                    <button
+                      type="button"
+                      className="btn-action add-function-btn"
+                      onClick={handleAddFunction}
+                    >
+                      <span>+ Nova função</span>
+                    </button>
+                  )}
+                  <div className="spacer" />
+                </>
               )}
-              <div className="spacer" />
             </div>
           </div>
         </main>
@@ -473,15 +556,20 @@ export default function App() {
           {activeId ? (
             activeId.startsWith('prog-') && activeCommand ? (
               <div style={{ height: '50px' }}>
-                <Command 
-                  kind={activeCommand.kind} 
-                  id={activeCommand.id} 
-                  isDragging 
+                <Command
+                  kind={activeCommand.kind}
+                  id={activeCommand.id}
+                  isDragging
                   functionName={
-                    activeCommand.kind.startsWith('CALL_') 
+                    activeCommand.kind.startsWith('CALL_')
                       ? state.functions.find(f => String(f.id).toUpperCase() === activeCommand.kind.replace('CALL_', ''))?.name
                       : state.functions.find(f => f.id === activeCommand.kind)?.name
-                  } 
+                  }
+                  loopTimes={
+                    activeCommand.kind.startsWith('LOOP_')
+                      ? state.loops.find(l => l.id.toLowerCase() === activeCommand.kind.replace('LOOP_', '').toLowerCase())?.times
+                      : undefined
+                  }
                 />
       </div>
     ) : activeId.startsWith('pal-') ? (

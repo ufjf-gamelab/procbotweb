@@ -1,7 +1,9 @@
 import type { GameState } from './types';
 
 export function totalCommandsUsed(state: GameState): number {
-  return state.program.length + state.functions.reduce((sum, f) => sum + f.program.length, 0);
+  return state.program.length
+    + state.functions.reduce((sum, f) => sum + f.program.length, 0)
+    + state.loops.reduce((sum, l) => sum + l.program.length, 0);
 }
 
 export function computeStars(state: GameState): 1 | 2 | 3 {
