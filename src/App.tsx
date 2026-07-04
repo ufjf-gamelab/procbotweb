@@ -20,7 +20,6 @@ import { Program } from './components/Program';
 import { Command } from './components/Command';
 import { Board } from './components/Board';
 import { WinModal } from './components/WinModal';
-import { RotateOverlay } from './components/RotateOverlay';
 import type { Cmd, CmdKind } from './game/types';
 import {
   AiOutlineHome,
