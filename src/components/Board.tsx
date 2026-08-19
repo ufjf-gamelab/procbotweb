@@ -123,7 +123,7 @@ export function Board({
                   return (
                     <img
                       src={src}
-                      alt="Robô"
+                      alt=""
                       className="robot-sprite"
                       style={style}
                     />
@@ -139,7 +139,7 @@ export function Board({
   }
 
   return (
-    <section className="board-wrap">
+    <section className="board-wrap" aria-label="Tabuleiro do robô" role="img">
       <div
         className="board-grid"
         style={{

@@ -55,3 +55,22 @@ export const LOOP_THEME: CmdTheme = {
   dark: '#831843',
   glow: 'rgba(244, 114, 182, 0.35)'
 };
+
+export function getCommandLabel(
+  kind: CmdKind | string,
+  opts?: { functionName?: string; loopTimes?: number }
+): string {
+  const kindStr = String(kind);
+
+  if (kindStr.startsWith('CALL_')) {
+    return `Chamar função ${opts?.functionName ?? kindStr.replace('CALL_', '')}`;
+  }
+
+  if (kindStr === 'REPEAT_NEW') return 'Adicionar repetição';
+
+  if (kindStr.startsWith('LOOP_')) {
+    return opts?.loopTimes ? `Repetir ${opts.loopTimes} vezes` : 'Repetir';
+  }
+
+  return CMD_CONFIG[kindStr as CmdKind]?.label ?? kindStr;
+}

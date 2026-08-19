@@ -361,19 +361,28 @@ export default function App() {
         <div className="header-center">
           <button
             className="home-btn"
+            aria-label="Voltar ao menu de fases"
             onClick={handleBackToMenu}>
-            <AiOutlineHome size={18} />
+            <AiOutlineHome size={18} aria-hidden="true" />
           </button>
 
           <div className="status-badge phase-badge">
             <span>FASE {state.level.id.padStart(2, '0')}</span>
           </div>
           <div className="status-badge stars-badge">
-            <AiFillStar className="icon-star" />
-            <span>{currentStars} / 3</span>
+            <AiFillStar className="icon-star" aria-hidden="true" />
+            <span>{currentStars} / 3 estrelas</span>
           </div>
         </div>
       </header>
+
+      <p className="sr-only" role="status" aria-live="polite">
+        {state.win
+          ? 'Nível concluído!'
+          : state.running
+            ? 'Executando programa…'
+            : 'Pronto para executar'}
+      </p>
 
       <DndContext 
         sensors={sensors} 
@@ -383,16 +392,22 @@ export default function App() {
         <main className="layout">
           <aside className={`mascot-area ${mascotTipOpen ? 'tip-open' : ''}`}>
           <div className="mascot-tip-container">
-            <img
-              src="./src/assets/robot_tip.png"
-              alt="Mascote Robô"
-              className="mascot-image"
-              role="button"
+            <button
+              type="button"
+              className="mascot-image-btn"
               aria-expanded={mascotTipOpen}
+              aria-controls="mascot-speech-bubble"
+              aria-label={mascotTipOpen ? 'Ocultar dica do mascote' : 'Mostrar dica do mascote'}
               onClick={() => setMascotTipOpen(open => !open)}
-            />
+            >
+              <img
+                src="./src/assets/robot_tip.png"
+                alt=""
+                className="mascot-image"
+              />
+            </button>
 
-            <div className="speech-bubble" key={mascotTip}>
+            <div id="mascot-speech-bubble" className="speech-bubble" key={mascotTip}>
               <p>{mascotTip}</p>
             </div>
           </div>
@@ -407,7 +422,7 @@ export default function App() {
                     disabled={state.running || state.program.length === 0}
                     className="btn-action btn-run"
                   >
-                    <GiPlayButton size={18} />
+                    <GiPlayButton size={18} aria-hidden="true" />
                     <span>Executar</span>
                   </button>
 
@@ -416,7 +431,7 @@ export default function App() {
                     disabled={state.running}
                     className="btn-action btn-clear"
                   >
-                    <GiBroom size={18} />
+                    <GiBroom size={18} aria-hidden="true" />
                     <span>Limpar</span>
                   </button>
 
@@ -425,7 +440,7 @@ export default function App() {
                     disabled={state.running}
                     className="btn-action btn-reset"
                   >
-                    <GiCycle size={18} />
+                    <GiCycle size={18} aria-hidden="true" />
                     <span>Reiniciar</span>
                   </button>
                 </div>
@@ -456,9 +471,13 @@ export default function App() {
                 />
               ) : (
                 <>
-                  <div className="cmd-tabs">
+                  <div className="cmd-tabs" role="tablist" aria-label="Programa e funções">
                     <button
                       type="button"
+                      role="tab"
+                      id="cmd-tab-main"
+                      aria-selected={activeCmdTab === 'main'}
+                      aria-controls="cmd-panel-main"
                       className={`cmd-tab ${activeCmdTab === 'main' ? 'is-active' : ''}`}
                       onClick={() => setActiveCmdTab('main')}
                     >
@@ -468,6 +487,10 @@ export default function App() {
                     {state.functions.map((funcData) => (
                       <button
                         type="button"
+                        role="tab"
+                        id={`cmd-tab-${funcData.id}`}
+                        aria-selected={activeCmdTab === funcData.id}
+                        aria-controls={`cmd-panel-${funcData.id}`}
                         key={funcData.id}
                         className={`cmd-tab ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
                         onClick={() => setActiveCmdTab(funcData.id)}
@@ -482,13 +505,19 @@ export default function App() {
                         className="cmd-tab"
                         onClick={handleAddFunction}
                         title="Adicionar nova função"
+                        aria-label="Adicionar nova função"
                       >
                         +
                       </button>
                     )}
                   </div>
 
-                  <div className={`cmd-tab-panel ${activeCmdTab === 'main' ? 'is-active' : ''}`}>
+                  <div
+                    id="cmd-panel-main"
+                    role="tabpanel"
+                    aria-labelledby="cmd-tab-main"
+                    className={`cmd-tab-panel ${activeCmdTab === 'main' ? 'is-active' : ''}`}
+                  >
                     <Program
                         programId="main"
                         title="Programa Principal"
@@ -509,6 +538,9 @@ export default function App() {
                     return (
                       <div
                         key={funcData.id}
+                        id={`cmd-panel-${funcData.id}`}
+                        role="tabpanel"
+                        aria-labelledby={`cmd-tab-${funcData.id}`}
                         className={`cmd-tab-panel ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
                       >
                         <Program
@@ -555,7 +587,7 @@ export default function App() {
         <DragOverlay dropAnimation={null}>
           {activeId ? (
             activeId.startsWith('prog-') && activeCommand ? (
-              <div style={{ height: '50px' }}>
+              <div aria-hidden="true" style={{ height: '50px' }}>
                 <Command
                   kind={activeCommand.kind}
                   id={activeCommand.id}
@@ -573,7 +605,7 @@ export default function App() {
                 />
       </div>
     ) : activeId.startsWith('pal-') ? (
-      <div style={{ height: '50px' }}>
+      <div aria-hidden="true" style={{ height: '50px' }}>
         <Command 
           kind={activeId.replace('pal-', '') as CmdKind} 
           id="ghost" 

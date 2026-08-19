@@ -25,8 +25,8 @@ export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Prop
     <header className="levels-header">
       <div className="player-progress">
         <div className="progress-stars">
-          <AiFillStar />
-          <span>{totalStars}</span>
+          <AiFillStar aria-hidden="true" />
+          <span>{totalStars} estrelas no total</span>
         </div>
       </div>
     </header>
@@ -48,6 +48,10 @@ export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Prop
           const accent = LEVEL_ACCENTS[index % LEVEL_ACCENTS.length];
           const starsEarned = levelStars[level.id] ?? 0;
 
+          const cardLabel = isLocked
+            ? `Fase ${level.id}, bloqueada`
+            : `Fase ${level.id}${isCompleted ? `, concluída com ${starsEarned} de 3 estrelas` : ', disponível'}`;
+
           return (
             <button
               key={level.id}
@@ -61,20 +65,22 @@ export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Prop
                 !isLocked && onSelectLevel(level)
               }
               disabled={isLocked}
+              aria-label={cardLabel}
             >
-              <span className="level-number">
+              <span className="level-number" aria-hidden="true">
                 {level.id}
               </span>
               {!isLocked && (
-                <BsRobot className="level-robot" />
+                <BsRobot className="level-robot" aria-hidden="true" />
               )}
               {isLocked ? (
                 <AiFillLock
                   className="lock-icon"
                   size={26}
+                  aria-hidden="true"
                 />
               ) : (
-                <div className="level-footer">
+                <div className="level-footer" aria-hidden="true">
                   <div className="level-lamps">
                     {level.lamps.map((_, i) => (
                       <span key={i} className="mini-lamp" />

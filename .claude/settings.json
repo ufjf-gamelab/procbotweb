@@ -32,7 +32,10 @@
       "Bash(cp \"/private/tmp/claude-501/-Users-rafaelaoliveiradesouza-Documents-ufjf-tcc-procbotweb/b3555442-3b6f-433d-8068-389553050c9b/scratchpad/test-loop.mjs\" \"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-loop.mjs\")",
       "Bash(node \"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-loop.mjs\")",
       "Bash(node \"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-delete-loop.mjs\")",
-      "Bash(pkill -f \"vite\" 2>/dev/null; rm -f \"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-delete-loop.mjs\"; echo done)"
+      "Bash(pkill -f \"vite\" 2>/dev/null; rm -f \"/Users/rafaelaoliveiradesouza/.npm/_npx/361ceb562f3b3235/test-delete-loop.mjs\"; echo done)",
+      "Bash(grep -n \"\\\\*, \\\\*::before\\\\|box-sizing\\\\|^\\\\* {\" src/styles.css)",
+      "Bash(grep -n \"select:TodoWrite\" /dev/null 2>/dev/null; echo done)",
+      "Read(//dev/**)"
     ],
     "additionalDirectories": [
       "/private/tmp",

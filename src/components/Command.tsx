@@ -1,7 +1,7 @@
 import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import type { CmdKind } from '../game/types';
-import { CMD_CONFIG, FUNCTION_THEME, LOOP_THEME } from '../game/constants';
+import { CMD_CONFIG, FUNCTION_THEME, LOOP_THEME, getCommandLabel } from '../game/constants';
 
 type Props = {
   kind: CmdKind;
@@ -45,11 +45,15 @@ export function Command({
 
   if (!config) return null;
 
+  const label = getCommandLabel(kind, { functionName, loopTimes });
+  const actionHint = isLoop ? 'Clique para editar o laço' : onRemove ? 'Clique para remover' : undefined;
+
   return (
     <div
       className={className}
       {...attributes}
       {...listeners}
+      aria-label={actionHint ? `${label}. ${actionHint}` : label}
       onClick={() => {
         if (isLoop && onOpen) {
           onOpen();
@@ -73,7 +77,7 @@ export function Command({
       } as React.CSSProperties}
       title={isLoop ? 'Clique para editar o laço' : `Arrastar para mover, Clique para remover`}
     >
-      <span style={{ color: config.color, display: 'flex', fontSize: '24px' }}>
+      <span aria-hidden="true" style={{ color: config.color, display: 'flex', fontSize: '24px' }}>
         {isFunction ? (
           <span className="command-label">
             {functionName || config.icon}

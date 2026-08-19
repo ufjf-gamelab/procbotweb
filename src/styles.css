@@ -7,6 +7,18 @@
 }
 * { box-sizing: border-box; }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 h3 {
   display: flex;
   align-items: center;
@@ -955,6 +967,19 @@ gap: 26px;
 @keyframes mascot-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+
+.mascot-image-btn {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.mascot-image-btn:hover {
+  background: none;
+  transform: none;
 }
 
 .mascot-image {
