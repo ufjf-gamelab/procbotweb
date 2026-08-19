@@ -25,8 +25,6 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
-    height: '50px',
-    marginBottom: '4px',
     position: 'relative' as const,
     zIndex: isDragging ? 1 : 0,
   };

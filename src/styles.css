@@ -225,6 +225,7 @@ html,
   grid-auto-rows: 1fr;
   gap: 8px;
   width: 100%;
+  padding: 0 12px;
 }
 
 .cmd-tabs {
@@ -1340,14 +1341,13 @@ gap: 26px;
   }
 
   .palette-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .palette-item-wrapper {
-    flex: 0 0 40px;
+    min-width: 0;
   }
 
   h3 {
@@ -1359,6 +1359,19 @@ gap: 26px;
     padding: 8px 10px;
     font-size: 13px;
     border-radius: 6px;
+  }
+
+  .palette-item-wrapper .block,
+  .program-list .block {
+    padding: 6px 4px;
+    min-height: 30px !important;
+    border-radius: 8px;
+    border-bottom-width: 3px;
+  }
+
+  .palette-item-wrapper .block span,
+  .program-list .block span {
+    font-size: 14px !important;
   }
 
   .levels-header {
@@ -1570,24 +1583,26 @@ gap: 26px;
   }
 
   .palette-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0 8px;
   }
 
   .palette-item-wrapper {
-    flex: 1 1 0;
     min-width: 0;
   }
 
-  .palette-item-wrapper .block {
+  .palette-item-wrapper .block,
+  .program-list .block {
     padding: 6px 4px;
     min-height: 32px !important;
     border-radius: 8px;
     border-bottom-width: 3px;
   }
 
-  .palette-item-wrapper .block span {
+  .palette-item-wrapper .block span,
+  .program-list .block span {
     font-size: 15px !important;
   }
 
