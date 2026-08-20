@@ -23,6 +23,7 @@ import { WinModal } from './components/WinModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { LoopEditor } from './components/LoopEditor';
 import type { Cmd, CmdKind, Level } from './game/types';
+import { getFunctionTheme } from './game/constants';
 import {
   AiOutlineHome,
   AiFillStar,
@@ -514,6 +515,7 @@ export default function App() {
                         className={`cmd-tab ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
                         onClick={() => setActiveCmdTab(funcData.id)}
                         title={`Função ${funcData.name}`}
+                        style={{ '--function-accent': getFunctionTheme(funcData.id).color } as React.CSSProperties}
                       >
                         <span className="cmd-tab-label">{funcData.name}</span>
                         <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
@@ -595,6 +597,7 @@ export default function App() {
                           isSelected={activeCmdTab === funcData.id}
                           onSelect={() => setActiveCmdTab(funcData.id)}
                           onDelete={isCustom && funcData.program.length === 0 ? () => handleRemoveFunction(funcData.id) : undefined}
+                          accentColor={getFunctionTheme(funcData.id).color}
                         />
                       </div>
                     );

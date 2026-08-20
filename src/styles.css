@@ -148,6 +148,14 @@ html,
   box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.4), 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
+.panel[style*="--function-accent"] h3 {
+  color: var(--function-accent);
+}
+
+.panel[style*="--function-accent"].is-target {
+  box-shadow: 0 0 0 2px var(--function-accent), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
 .delete-function-btn {
   background: none;
   border: none;
@@ -1374,8 +1382,8 @@ gap: 26px;
 
   .cmd-tab.is-active {
     color: #fff;
-    border-color: #60a5fa;
-    background: rgba(96, 165, 250, 0.15);
+    border-color: var(--function-accent, #60a5fa);
+    background: color-mix(in srgb, var(--function-accent, #60a5fa) 15%, transparent);
   }
 
   .cmd-tab-panel {
@@ -1715,8 +1723,8 @@ gap: 26px;
 
   .cmd-tab.is-active {
     color: #fff;
-    border-color: #60a5fa;
-    background: rgba(96, 165, 250, 0.15);
+    border-color: var(--function-accent, #60a5fa);
+    background: color-mix(in srgb, var(--function-accent, #60a5fa) 15%, transparent);
   }
 
   .cmd-tab-panel {

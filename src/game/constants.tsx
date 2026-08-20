@@ -48,6 +48,30 @@ export const FUNCTION_THEME: CmdTheme = {
   glow: 'rgba(167, 139, 250, 0.35)'
 };
 
+const FUNCTION_PALETTE: { color: string; dark: string; glow: string }[] = [
+  { color: '#a78bfa', dark: '#4c1d95', glow: 'rgba(167, 139, 250, 0.35)' },
+  { color: '#facc15', dark: '#854d0e', glow: 'rgba(250, 204, 21, 0.35)' },
+  { color: '#22d3ee', dark: '#0e7490', glow: 'rgba(34, 211, 238, 0.35)' },
+  { color: '#fb7185', dark: '#9f1239', glow: 'rgba(251, 113, 133, 0.35)' },
+  { color: '#4ade80', dark: '#166534', glow: 'rgba(74, 222, 128, 0.35)' },
+  { color: '#f97316', dark: '#7c2d12', glow: 'rgba(249, 115, 22, 0.35)' },
+  { color: '#818cf8', dark: '#3730a3', glow: 'rgba(129, 140, 248, 0.35)' },
+  { color: '#e879f9', dark: '#86198f', glow: 'rgba(232, 121, 249, 0.35)' },
+];
+
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+export function getFunctionTheme(funcId: string): CmdTheme {
+  const entry = FUNCTION_PALETTE[hashString(funcId.toUpperCase()) % FUNCTION_PALETTE.length];
+  return { ...FUNCTION_THEME, ...entry };
+}
+
 export const LOOP_THEME: CmdTheme = {
   icon: <AiOutlineSync size={20} />,
   label: 'Repetir',

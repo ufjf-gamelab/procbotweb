@@ -1,7 +1,7 @@
 import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import type { CmdKind } from '../game/types';
-import { CMD_CONFIG, FUNCTION_THEME, LOOP_THEME, getCommandLabel } from '../game/constants';
+import { CMD_CONFIG, LOOP_THEME, getCommandLabel, getFunctionTheme } from '../game/constants';
 
 type Props = {
   kind: CmdKind;
@@ -33,8 +33,9 @@ export function Command({
   let config;
 
   if (isFunction) {
+    const funcId = String(kind).replace('CALL_', '');
     config = {
-      ...FUNCTION_THEME,
+      ...getFunctionTheme(funcId),
       icon: <span style={{ fontStyle: 'italic', fontFamily: 'serif' }}>{functionName}</span>
     };
   } else if (isLoop || String(kind) === 'REPEAT_NEW') {

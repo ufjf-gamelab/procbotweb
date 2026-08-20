@@ -47,7 +47,7 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
 }
 
 
-export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete }:
+export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete, accentColor }:
   { programId: string; title: string; limitText: string;
     onTitleChange?: (newName: string) => void;
     isFull: boolean;
@@ -58,6 +58,7 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
   isSelected?: boolean;
   onSelect?: () => void;
   onDelete?: () => void;
+  accentColor?: string;
  }) {
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -75,8 +76,12 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
     dropClassName += isFull ? " is-full" : " is-valid";
   }
 
+  const panelStyle = accentColor
+    ? ({ '--function-accent': accentColor, borderColor: accentColor } as React.CSSProperties)
+    : undefined;
+
   return (
-    <section className={clsx('panel', isSelected && 'is-target')}>
+    <section className={clsx('panel', isSelected && 'is-target')} style={panelStyle}>
       <h3 onClick={onSelect} style={onSelect ? { cursor: 'pointer' } : undefined}>
         {onTitleChange ? (
           <div className="editable-title-wrapper" onClick={() => inputRef.current?.focus()}>
