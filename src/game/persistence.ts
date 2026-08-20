@@ -2,6 +2,7 @@ import type { GameState } from './types';
 import { allLevels } from './levels';
 
 const STORAGE_KEY = 'procbotweb:session:v1';
+const TUTORIAL_KEY = 'procbotweb:tutorial-seen:v1';
 
 export type PersistedSession = {
   completedLevels: string[];
@@ -31,6 +32,22 @@ export function saveSession(data: PersistedSession) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     // localStorage indisponível (modo privado, quota etc.) — sessão simplesmente não persiste
+  }
+}
+
+export function hasSeenTutorial(): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markTutorialSeen() {
+  try {
+    localStorage.setItem(TUTORIAL_KEY, '1');
+  } catch {
+    // localStorage indisponível — tutorial simplesmente reaparece na próxima visita
   }
 }
 

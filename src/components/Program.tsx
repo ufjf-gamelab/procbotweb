@@ -89,7 +89,11 @@ export function Program({ programId, title, count, max, onTitleChange, isFull, i
     : undefined;
 
   return (
-    <section className={clsx('panel', isSelected && 'is-target')} style={panelStyle}>
+    <section
+      className={clsx('panel', isSelected && 'is-target')}
+      style={panelStyle}
+      data-tutorial={programId === 'main' ? 'program-main' : undefined}
+    >
       <h3 onClick={onSelect} style={onSelect ? { cursor: 'pointer' } : undefined}>
         {onTitleChange && !disabled ? (
           <div className="editable-title-wrapper" onClick={() => inputRef.current?.focus()}>

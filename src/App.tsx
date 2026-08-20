@@ -22,12 +22,15 @@ import { Board } from './components/Board';
 import { WinModal } from './components/WinModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { MascotModal } from './components/MascotModal';
+import { Tutorial } from './components/Tutorial';
+import type { TutorialStep } from './components/Tutorial';
 import robotTip from './assets/robot_tip.png';
 import { LoopEditor } from './components/LoopEditor';
 import type { Cmd, CmdKind, Level } from './game/types';
 import { getFunctionTheme } from './game/constants';
 import { useGameAudio } from './game/useGameAudio';
 import { isMuted, setMuted, playClick } from './game/audio';
+import { hasSeenTutorial, markTutorialSeen } from './game/persistence';
 import {
   AiOutlineHome,
   AiFillStar,
@@ -41,6 +44,13 @@ import {
 import './styles.css';
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+const TUTORIAL_STEPS: TutorialStep[] = [
+  { target: 'board', text: 'Esse é o tabuleiro! Seu robô precisa se mover até a lâmpada e acender ela. 💡' },
+  { target: 'palette', text: 'Aqui ficam os comandos. Toque ou arraste um comando para o Programa Principal.' },
+  { target: 'program-main', text: 'Os comandos que você escolher aparecem aqui, na ordem que o robô vai seguir.' },
+  { target: 'play-button', text: 'Quando terminar seu programa, toque em Play para ver o robô em ação!' },
+];
 
 export default function App() {
   // const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
@@ -58,6 +68,7 @@ export default function App() {
   const [openLoopId, setOpenLoopId] = useState<string | null>(null);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [wobbleTarget, setWobbleTarget] = useState<string | null>(null);
+  const [tutorialSeen, setTutorialSeen] = useState(() => hasSeenTutorial());
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
   const runLoopActiveRef = useRef(false);
@@ -404,6 +415,14 @@ export default function App() {
     setView('MENU');
   }
 
+  function handleFinishTutorial() {
+    markTutorialSeen();
+    setTutorialSeen(true);
+    setMascotTipOpen(false);
+  }
+
+  const showTutorial = view === 'GAME' && state.level.id === '1' && !tutorialSeen;
+
   const activeCommand: Cmd | undefined = activeId
     ? (
       state.program.find(cmd => `prog-${cmd.id}` === activeId) ||
@@ -459,11 +478,15 @@ export default function App() {
         }}
       />
 
-      <MascotModal
-        isOpen={mascotTipOpen}
-        tip={mascotTip}
-        onClose={() => setMascotTipOpen(false)}
-      />
+      {showTutorial ? (
+        <Tutorial steps={TUTORIAL_STEPS} onFinish={handleFinishTutorial} />
+      ) : (
+        <MascotModal
+          isOpen={mascotTipOpen}
+          tip={mascotTip}
+          onClose={() => setMascotTipOpen(false)}
+        />
+      )}
 
       <div className="level-controls">
        
@@ -533,7 +556,7 @@ export default function App() {
           </div>
 
           {!openLoop && (
-            <div className="command-rail">
+            <div className="command-rail" data-tutorial="palette">
               <Palette
                 onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
                 functions={state.functions}
@@ -586,6 +609,7 @@ export default function App() {
                               className={`btn-action btn-run ${state.running ? 'is-stop' : ''}`}
                               title={state.running ? 'Parar' : 'Executar'}
                               aria-label={state.running ? 'Parar execução' : 'Executar'}
+                              data-tutorial="play-button"
                             >
                               {state.running ? (
                                 <AiOutlinePauseCircle size={16} aria-hidden="true" />

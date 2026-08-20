@@ -189,7 +189,7 @@ export function Board({
   }
 
   return (
-    <section className="board-wrap" aria-label="Tabuleiro do robô" role="img">
+    <section className="board-wrap" aria-label="Tabuleiro do robô" role="img" data-tutorial="board">
       <div
         className="board-grid"
         style={{
