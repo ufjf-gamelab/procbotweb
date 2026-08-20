@@ -12,9 +12,10 @@ type Props = {
   onRemoveCommand: (id: string) => void;
   onSetTimes: (times: number) => void;
   onDeleteLoop: () => void;
+  executingCmdId?: string | null;
 };
 
-export function LoopEditor({ loop, loopsConfig, functions, onClose, onAddCommand, onRemoveCommand, onSetTimes, onDeleteLoop }: Props) {
+export function LoopEditor({ loop, loopsConfig, functions, onClose, onAddCommand, onRemoveCommand, onSetTimes, onDeleteLoop, executingCmdId }: Props) {
   const isFull = loop.program.length >= loop.maxCommands;
 
   return (
@@ -62,6 +63,7 @@ export function LoopEditor({ loop, loopsConfig, functions, onClose, onAddCommand
         onRemove={onRemoveCommand}
         functions={functions}
         isSelected
+        executingCmdId={executingCmdId}
       />
     </section>
   );

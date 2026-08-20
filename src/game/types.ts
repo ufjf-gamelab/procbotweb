@@ -34,12 +34,14 @@ export type GameState = {
   running: boolean;
   win: boolean;
   callStack: ExecutionContext[];
+  currentCmd: { id: string; ownerId: string } | null;
 };
 
 export type ExecutionContext = {
   program: Cmd[];
   stepIndex: number;
   remainingIterations?: number;
+  ownerId: string;
 };
 
 export type Action =

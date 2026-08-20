@@ -13,6 +13,7 @@ type Props = {
   listeners?: SyntheticListenerMap;
   functionName?: string;
   loopTimes?: number;
+  isExecuting?: boolean;
 };
 
 export function Command({
@@ -24,9 +25,10 @@ export function Command({
   attributes,
   listeners,
   functionName,
-  loopTimes
+  loopTimes,
+  isExecuting = false
 }: Props) {
-  const className = `block ${isDragging ? 'dragging' : ''}`;
+  const className = `block ${isDragging ? 'dragging' : ''} ${isExecuting ? 'is-executing' : ''}`;
 
   const isFunction = String(kind).startsWith('CALL_');
   const isLoop = String(kind).startsWith('LOOP_');

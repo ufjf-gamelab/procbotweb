@@ -31,6 +31,7 @@ export const initialState: GameState = {
   stepIndex: 0,
   running: false,
   win: false,
+  currentCmd: null,
 };
 
 const fwd = (dir: number) => {
@@ -111,49 +112,51 @@ export function reducer(state: GameState, action: Action): GameState {
     case 'setProgram':
       return { ...state, program: action.program }; 
     case 'resetLevel':
-      return { ...state, robot: { ...state.level.start }, lit: new Set(), stepIndex: 0, running: false, win: false };
+      return { ...state, robot: { ...state.level.start }, lit: new Set(), stepIndex: 0, running: false, win: false, currentCmd: null };
     case 'setRunning':
       if (action.value === true) {
         return {
           ...state,
           running: true,
-          callStack: [{ program: state.program, stepIndex: 0 }],
+          callStack: [{ program: state.program, stepIndex: 0, ownerId: 'main' }],
           stepIndex: 0,
+          currentCmd: null,
         };
       } else {
-        return { ...state, running: false, callStack: [] };
+        return { ...state, running: false, callStack: [], currentCmd: null };
       }
     case 'clearWin':
       return { ...state, win: false };
 
     case 'stepOnce': {
       if (!state.running || state.win || state.callStack.length === 0) {
-        return { ...state, running: false };
+        return { ...state, running: false, currentCmd: null };
       }
 
       const stack = [...state.callStack];
-      const currentContext = { ...stack[stack.length - 1] }; 
+      const currentContext = { ...stack[stack.length - 1] };
 
       if (currentContext.stepIndex >= currentContext.program.length) {
         if (currentContext.remainingIterations && currentContext.remainingIterations > 1) {
           currentContext.remainingIterations -= 1;
           currentContext.stepIndex = 0;
           stack[stack.length - 1] = currentContext;
-          return { ...state, callStack: stack };
+          return { ...state, callStack: stack, currentCmd: null };
         }
 
         stack.pop();
         if (stack.length === 0) {
-          return { ...state, running: false, callStack: [] };
+          return { ...state, running: false, callStack: [], currentCmd: null };
         }
 
         const parentContext = { ...stack[stack.length - 1] };
         parentContext.stepIndex += 1;
         stack[stack.length - 1] = parentContext;
-        return { ...state, callStack: stack };
+        return { ...state, callStack: stack, currentCmd: null };
       }
 
       const cmd = currentContext.program[currentContext.stepIndex];
+      const currentCmd = { id: cmd.id, ownerId: currentContext.ownerId };
 
       if (cmd.kind.startsWith('LOOP_')) {
         const loopId = cmd.kind.slice(5);
@@ -164,11 +167,11 @@ export function reducer(state: GameState, action: Action): GameState {
         if (!targetLoopState || targetLoopState.program.length === 0 || targetLoopState.times <= 0) {
           currentContext.stepIndex += 1;
           stack[stack.length - 1] = currentContext;
-          return { ...state, callStack: stack };
+          return { ...state, callStack: stack, currentCmd };
         }
 
-        stack.push({ program: targetLoopState.program, stepIndex: 0, remainingIterations: targetLoopState.times });
-        return { ...state, callStack: stack };
+        stack.push({ program: targetLoopState.program, stepIndex: 0, remainingIterations: targetLoopState.times, ownerId: targetLoopState.id });
+        return { ...state, callStack: stack, currentCmd };
       }
 
       const funcIdFromCommand = cmd.kind.startsWith('CALL_')
@@ -184,21 +187,22 @@ export function reducer(state: GameState, action: Action): GameState {
         if (targetFuncState.program.length === 0) {
            currentContext.stepIndex += 1;
            stack[stack.length - 1] = currentContext;
-           return { ...state, callStack: stack };
+           return { ...state, callStack: stack, currentCmd };
         }
 
-        stack.push({ program: targetFuncState.program, stepIndex: 0 });
-        return { ...state, callStack: stack };
+        stack.push({ program: targetFuncState.program, stepIndex: 0, ownerId: targetFuncState.id });
+        return { ...state, callStack: stack, currentCmd };
       }
 
       const nextState = applyCmd(state, cmd.kind);
       currentContext.stepIndex += 1;
       stack[stack.length - 1] = currentContext;
 
-      return { 
-        ...nextState, 
+      return {
+        ...nextState,
         callStack: stack,
-        stepIndex: stack.length === 1 ? currentContext.stepIndex : state.stepIndex 
+        stepIndex: stack.length === 1 ? currentContext.stepIndex : state.stepIndex,
+        currentCmd,
       };
     }
 

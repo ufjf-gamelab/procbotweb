@@ -51,5 +51,6 @@ export function restoreGameState(saved: PersistedSession | null): GameState | nu
     stepIndex: saved.stepIndex ?? 0,
     running: false,
     win: false,
+    currentCmd: null,
   };
 }

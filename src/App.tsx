@@ -87,6 +87,21 @@ export default function App() {
     }
   }, [state.win, state.level.id, completedLevels]);
 
+  useEffect(() => {
+    if (!state.running || !state.currentCmd) return;
+    const { ownerId } = state.currentCmd;
+
+    if (ownerId === 'main') {
+      setOpenLoopId(null);
+      setActiveCmdTab('main');
+    } else if (state.functions.some(f => f.id === ownerId)) {
+      setOpenLoopId(null);
+      setActiveCmdTab(ownerId);
+    } else if (state.loops.some(l => l.id === ownerId)) {
+      setOpenLoopId(ownerId);
+    }
+  }, [state.currentCmd, state.running, state.functions, state.loops]);
+
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
@@ -329,6 +344,8 @@ export default function App() {
   const loopsConfig = state.level.loopsConfig;
   const canAddLoop = !!loopsConfig && state.loops.length < loopsConfig.maxLoops;
   const openLoop = openLoopId ? state.loops.find(l => l.id === openLoopId) : undefined;
+  const execCmdIdFor = (ownerId: string) =>
+    state.running && state.currentCmd?.ownerId === ownerId ? state.currentCmd.id : null;
 
   if (view === 'MENU') {
     return (
@@ -486,6 +503,7 @@ export default function App() {
                   onRemoveCommand={(cmdId) => dispatch({ type: 'REMOVE_FROM_LOOP', loopId: openLoop.id, id: cmdId })}
                   onSetTimes={(times) => dispatch({ type: 'SET_LOOP_TIMES', loopId: openLoop.id, times })}
                   onDeleteLoop={() => handleDeleteLoop(openLoop.id)}
+                  executingCmdId={execCmdIdFor(openLoop.id)}
                 />
               ) : (
                 <>
@@ -496,7 +514,7 @@ export default function App() {
                       id="cmd-tab-main"
                       aria-selected={activeCmdTab === 'main'}
                       aria-controls="cmd-panel-main"
-                      className={`cmd-tab ${activeCmdTab === 'main' ? 'is-active' : ''}`}
+                      className={`cmd-tab ${activeCmdTab === 'main' ? 'is-active' : ''} ${execCmdIdFor('main') ? 'is-executing-tab' : ''}`}
                       onClick={() => setActiveCmdTab('main')}
                       title="Programa Principal"
                       aria-label="Programa Principal"
@@ -512,7 +530,7 @@ export default function App() {
                         aria-selected={activeCmdTab === funcData.id}
                         aria-controls={`cmd-panel-${funcData.id}`}
                         key={funcData.id}
-                        className={`cmd-tab ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
+                        className={`cmd-tab ${activeCmdTab === funcData.id ? 'is-active' : ''} ${execCmdIdFor(funcData.id) ? 'is-executing-tab' : ''}`}
                         onClick={() => setActiveCmdTab(funcData.id)}
                         title={`Função ${funcData.name}`}
                         style={{ '--function-accent': getFunctionTheme(funcData.id).color } as React.CSSProperties}
@@ -562,6 +580,7 @@ export default function App() {
                         onOpenLoop={handleOpenLoop}
                         isSelected={activeCmdTab === 'main'}
                         onSelect={() => setActiveCmdTab('main')}
+                        executingCmdId={execCmdIdFor('main')}
                       />
                   </div>
                   {state.functions.map((funcData) => {
@@ -598,6 +617,7 @@ export default function App() {
                           onSelect={() => setActiveCmdTab(funcData.id)}
                           onDelete={isCustom && funcData.program.length === 0 ? () => handleRemoveFunction(funcData.id) : undefined}
                           accentColor={getFunctionTheme(funcData.id).color}
+                          executingCmdId={execCmdIdFor(funcData.id)}
                         />
                       </div>
                     );

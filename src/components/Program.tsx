@@ -11,7 +11,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Cmd } from '../game/types';
 import { Command } from './Command';
 
-function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLoop }: { item: Cmd; onRemove: (id: string) => void; functionName?: string; loopTimes?: number; onOpenLoop?: () => void }) {
+function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLoop, isExecuting }: { item: Cmd; onRemove: (id: string) => void; functionName?: string; loopTimes?: number; onOpenLoop?: () => void; isExecuting?: boolean }) {
   const {
     attributes,
     listeners,
@@ -41,13 +41,14 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
         functionName={functionName}
         loopTimes={loopTimes}
         isDragging={isDragging}
+        isExecuting={isExecuting}
       />
     </div>
   );
 }
 
 
-export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete, accentColor }:
+export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete, accentColor, executingCmdId }:
   { programId: string; title: string; limitText: string;
     onTitleChange?: (newName: string) => void;
     isFull: boolean;
@@ -59,6 +60,7 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
   onSelect?: () => void;
   onDelete?: () => void;
   accentColor?: string;
+  executingCmdId?: string | null;
  }) {
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -154,6 +156,7 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
                 functionName={funcData?.name}
                 loopTimes={loopData?.times}
                 onOpenLoop={isLoop ? () => onOpenLoop?.(loopData?.id ?? String(cmd.kind).replace('LOOP_', '')) : undefined}
+                isExecuting={cmd.id === executingCmdId}
               />
             );
           })}
