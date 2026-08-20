@@ -35,6 +35,7 @@ export type GameState = {
   win: boolean;
   callStack: ExecutionContext[];
   currentCmd: { id: string; ownerId: string } | null;
+  bump: { seq: number; dir: Dir } | null;
 };
 
 export type ExecutionContext = {

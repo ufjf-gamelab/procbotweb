@@ -932,6 +932,12 @@ gap: 26px;
   --btn-glow: rgba(52, 211, 153, 0.35);
 }
 
+.btns button.btn-run.is-stop {
+  --btn-color: #f87171;
+  --btn-dark: #7f1d1d;
+  --btn-glow: rgba(248, 113, 113, 0.4);
+}
+
 .btns button.btn-reset {
   --btn-color: #fb923c;
   --btn-dark: #9a3412;

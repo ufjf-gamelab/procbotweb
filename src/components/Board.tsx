@@ -8,18 +8,44 @@ import robotBack from '../assets/robot_back.png';
 import robotSide from '../assets/robot_side.png';
 import robotDuck from '../assets/robot_duck.png';
 
+const bumpOffset = (dir: number) => {
+  switch (dir % 4) {
+    case 0: return { x: 0, y: -14 };
+    case 1: return { x: 14, y: 0 };
+    case 2: return { x: 0, y: 14 };
+    case 3: return { x: -14, y: 0 };
+    default: return { x: 0, y: 0 };
+  }
+};
+
 export function Board({
-  level, robot, lit
+  level, robot, lit, bump, running
 }: {
   level: Level;
   robot: { x: number; y: number; dir: 0|1|2|3 };
   lit: Set<string>;
+  bump?: { seq: number; dir: 0|1|2|3 } | null;
+  running?: boolean;
 }) {
   const cells: JSX.Element[] = [];
   const [celebrating, setCelebrating] = useState(false);
   const [moveEffect, setMoveEffect] = useState<'step' | 'turn' | null>(null);
+  const [bumping, setBumping] = useState(false);
   const prevRobotRef = useRef({ x: robot.x, y: robot.y, dir: robot.dir });
   const prevLitRef = useRef<Set<string>>(new Set());
+  const lastBumpSeq = useRef(0);
+
+  useEffect(() => {
+    if (!bump || bump.seq === lastBumpSeq.current || !running) return;
+    lastBumpSeq.current = bump.seq;
+    setBumping(true);
+    const timer = setTimeout(() => setBumping(false), 320);
+    return () => clearTimeout(timer);
+  }, [bump, running]);
+
+  useEffect(() => {
+    if (!running) setBumping(false);
+  }, [running]);
 
   useEffect(() => {
     const currentKey = `${robot.x},${robot.y}`;
@@ -83,6 +109,7 @@ export function Board({
       const isRobotHere = (robot.x === x && robot.y === y);
       
       const showJump = isRobotHere && celebrating;
+      const showBump = isRobotHere && bumping && !!running;
 
       cells.push(
         <div 
@@ -104,17 +131,21 @@ export function Board({
               <motion.div
                 animate={
                   showJump
-                    ? { y: [0, -30, 0], rotate: 0, scaleY: 1 }
-                    : moveEffect === 'step'
-                      ? { y: [0, -6, 0], scaleY: [1, 0.96, 1] }
-                      : { y: 0, rotate: 0, scaleY: 1 }
+                    ? { x: 0, y: [0, -30, 0], rotate: 0, scaleY: 1 }
+                    : showBump
+                      ? { x: [0, bumpOffset(bump!.dir).x, 0], y: [0, bumpOffset(bump!.dir).y, 0] }
+                      : moveEffect === 'step'
+                        ? { x: 0, y: [0, -6, 0], scaleY: [1, 0.96, 1] }
+                        : { x: 0, y: 0, rotate: 0, scaleY: 1 }
                 }
                 transition={
                   showJump
                     ? { duration: 0.4, times: [0, 0.5, 1] }
-                    : moveEffect === 'step'
-                      ? { duration: 0.42, ease: "easeInOut" }
-                      : { type: "spring", stiffness: 300, damping: 30 }
+                    : showBump
+                      ? { duration: 0.3, ease: "easeOut" }
+                      : moveEffect === 'step'
+                        ? { duration: 0.42, ease: "easeInOut" }
+                        : { type: "spring", stiffness: 300, damping: 30 }
                 }
                 style={{ width: '100%', height: '100%', position: 'relative' }}
               >
@@ -125,7 +156,11 @@ export function Board({
                       src={src}
                       alt=""
                       className="robot-sprite"
-                      style={style}
+                      style={{
+                        ...style,
+                        filter: showBump ? 'brightness(1.4) saturate(1.6) drop-shadow(0 0 6px #f87171)' : 'none',
+                        transition: 'filter 0.15s ease-out',
+                      }}
                     />
                   );
                 })()}

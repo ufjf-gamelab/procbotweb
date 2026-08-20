@@ -52,5 +52,6 @@ export function restoreGameState(saved: PersistedSession | null): GameState | nu
     running: false,
     win: false,
     currentCmd: null,
+    bump: null,
   };
 }

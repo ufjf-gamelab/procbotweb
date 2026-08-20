@@ -28,6 +28,7 @@ import {
   AiOutlineHome,
   AiFillStar,
   AiOutlinePlayCircle,
+  AiOutlinePauseCircle,
   AiOutlineReload,
   AiOutlineCode,
   AiOutlineDelete
@@ -52,6 +53,7 @@ export default function App() {
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
+  const runLoopActiveRef = useRef(false);
 
   useEffect(() => {
     saveSession({
@@ -111,27 +113,32 @@ export default function App() {
   async function handleRun() {
     if (state.program.length === 0) return;
 
-    if (state.running) {
+    if (state.running || runLoopActiveRef.current) {
       dispatch({ type: 'setRunning', value: false });
-      return; 
+      return;
     }
 
+    runLoopActiveRef.current = true;
     dispatch({ type: 'resetLevel' });
-    
-    await delay(400);
-    dispatch({ type: 'setRunning', value: true });
 
-    while (
-      stateRef.current.stepIndex < stateRef.current.program.length && 
-      !stateRef.current.win
-    ) {
-      dispatch({ type: 'stepOnce' });
-      await delay(500); 
+    try {
+      await delay(400);
+      dispatch({ type: 'setRunning', value: true });
 
-      if (!stateRef.current.running) break;
+      while (
+        stateRef.current.stepIndex < stateRef.current.program.length &&
+        !stateRef.current.win
+      ) {
+        dispatch({ type: 'stepOnce' });
+        await delay(500);
+
+        if (!stateRef.current.running) break;
+      }
+
+      dispatch({ type: 'setRunning', value: false });
+    } finally {
+      runLoopActiveRef.current = false;
     }
-
-    dispatch({ type: 'setRunning', value: false });
   }
 
   function handleDragStart(e: DragStartEvent) {
@@ -456,17 +463,21 @@ export default function App() {
         </aside>
 
           <div className="center">
-            <Board level={state.level} robot={state.robot} lit={state.lit} />
+            <Board level={state.level} robot={state.robot} lit={state.lit} bump={state.bump} running={state.running} />
             <div className="controls-wrap">
                 <div className="btns">
                   <button
                     onClick={handleRun}
-                    disabled={state.running || state.program.length === 0}
-                    className="btn-action btn-run"
-                    title="Executar"
-                    aria-label="Executar"
+                    disabled={!state.running && state.program.length === 0}
+                    className={`btn-action btn-run ${state.running ? 'is-stop' : ''}`}
+                    title={state.running ? 'Parar' : 'Executar'}
+                    aria-label={state.running ? 'Parar execução' : 'Executar'}
                   >
-                    <AiOutlinePlayCircle size={22} aria-hidden="true" />
+                    {state.running ? (
+                      <AiOutlinePauseCircle size={22} aria-hidden="true" />
+                    ) : (
+                      <AiOutlinePlayCircle size={22} aria-hidden="true" />
+                    )}
                   </button>
 
                   <button

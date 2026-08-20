@@ -11,6 +11,8 @@ const cascadeRemoveLoop = (loops: LoopDef[], removedCmd?: Cmd): LoopDef[] =>
 
 const initialProgram: Cmd[] = [];
 
+const MAX_CALL_DEPTH = 300;
+
 const initFunctionsState = (level: Level) => {
   return (level.functionsConfig || []).map(config => ({
     id: config.id,
@@ -32,6 +34,7 @@ export const initialState: GameState = {
   running: false,
   win: false,
   currentCmd: null,
+  bump: null,
 };
 
 const fwd = (dir: number) => {
@@ -55,7 +58,11 @@ function applyCmd(state: GameState, kind: CmdKind): GameState {
     const { dx, dy } = fwd(s.robot.dir);
     const nx = clamp(s.robot.x + dx, 0, s.level.width - 1);
     const ny = clamp(s.robot.y + dy, 0, s.level.height - 1);
-    s.robot.x = nx; s.robot.y = ny; 
+    if (nx === s.robot.x && ny === s.robot.y) {
+      s.bump = { seq: (state.bump?.seq ?? 0) + 1, dir: s.robot.dir };
+    } else {
+      s.robot.x = nx; s.robot.y = ny;
+    }
   } else if (kind === 'ESQUERDA') {
     s.robot.dir = ((s.robot.dir + 3) % 4) as Dir;
   } else if (kind === 'DIREITA') {
@@ -190,6 +197,10 @@ export function reducer(state: GameState, action: Action): GameState {
            return { ...state, callStack: stack, currentCmd };
         }
 
+        if (stack.length >= MAX_CALL_DEPTH) {
+          return { ...state, running: false, callStack: [], currentCmd: null };
+        }
+
         stack.push({ program: targetFuncState.program, stepIndex: 0, ownerId: targetFuncState.id });
         return { ...state, callStack: stack, currentCmd };
       }
@@ -240,11 +251,6 @@ export function reducer(state: GameState, action: Action): GameState {
       const funcState = state.functions[funcIndex];
 
       if (funcState.program.length >= funcState.maxCommands) return state;
-
-      if (action.kind.toUpperCase() === `CALL_${action.funcId.toUpperCase()}`) {
-        alert("Nesta versão, uma função não pode chamar a si mesma!");
-        return state;
-      }
 
       const newFunctions = [...state.functions];
       newFunctions[funcIndex] = {
@@ -305,11 +311,6 @@ export function reducer(state: GameState, action: Action): GameState {
       const sourceProgram = getProgram(fromContainer);
       const cmd = sourceProgram?.find(c => c.id === cmdId);
       if (!sourceProgram || !cmd) return state;
-
-      if (toContainer !== 'main' && cmd.kind.toUpperCase() === `CALL_${toContainer.toUpperCase()}`) {
-        alert("Nesta versão, uma função não pode chamar a si mesma!");
-        return state;
-      }
 
       const targetLimit = toContainer === 'main'
         ? (state.level.maxMain ?? 99)
