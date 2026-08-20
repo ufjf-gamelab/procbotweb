@@ -52,8 +52,7 @@ type PaletteProps = {
 
 export function Palette({onCommandClick, functions = [], showLoopTile = false}: PaletteProps) {
   return (
-    <section className="panel">
-      <h3>Paleta de comandos</h3>
+    <section className="panel" aria-label="Paleta de comandos">
       <div className="palette-grid">
         {BASE_COMMANDS.map(k => (
           <PalItem

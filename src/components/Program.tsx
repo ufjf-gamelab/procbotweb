@@ -1,7 +1,7 @@
 import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { useRef } from 'react';
 import clsx from 'clsx';
-import { AiOutlineDelete } from 'react-icons/ai';
+import { AiOutlineDelete, AiOutlineCode, AiOutlineInbox } from 'react-icons/ai';
 import {
   SortableContext,
   useSortable,
@@ -94,7 +94,9 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
             />
           </div>
         ) : (
-          <span>{title}</span>
+          <span title={title} aria-label={title}>
+            <AiOutlineCode size={18} aria-hidden="true" />
+          </span>
         )}
         
         {limitText && (
@@ -151,7 +153,11 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
             );
           })}
         </SortableContext>
-        {items.length === 0 && <p className="hint">Arraste comandos aqui</p>}
+        {items.length === 0 && (
+          <p className="hint" title="Arraste comandos aqui" aria-label="Arraste comandos aqui">
+            <AiOutlineInbox size={26} aria-hidden="true" />
+          </p>
+        )}
       </div>
     </section>
   );

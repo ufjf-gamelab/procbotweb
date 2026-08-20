@@ -24,11 +24,16 @@ h3 {
   align-items: center;
   flex-wrap: nowrap;
   gap: 8px;
+  min-width: 0;
   margin: 0 0 8px; font-size: 14px; color: #cbd5e1; letter-spacing:.02em; }
 
 .hint {
+  grid-column: 1 / -1;
   margin: 8px;
   color: #94a3b8;
+  display: flex;
+  justify-content: center;
+  opacity: 0.6;
 }
 
 .board-wrap {
@@ -237,6 +242,8 @@ html,
 }
 
 .block {
+  min-width: 0;
+  overflow: hidden;
   background: #111827;
   color: var(--block-color, #34d399);
   border: 2px solid var(--block-color, #059669);
@@ -818,6 +825,29 @@ gap: 26px;
   background: rgba(255,255,255,0.2);
 }
 
+.btn-danger {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  color: #1c0a0a;
+}
+.btn-danger:hover {
+  background: linear-gradient(135deg, #fca5a5, #f87171);
+}
+
+.confirm-modal {
+  max-width: 340px;
+  text-align: center;
+}
+
+.confirm-icon {
+  color: #f87171;
+  margin-bottom: 8px;
+}
+
+.confirm-modal p {
+  color: #cbd5e1;
+  margin: 8px 0 0;
+}
+
 .btns button {
   --btn-color: #60a5fa;
   --btn-dark: #1e3a8a;
@@ -858,45 +888,80 @@ gap: 26px;
   --btn-glow: rgba(52, 211, 153, 0.35);
 }
 
-.btns button.btn-clear {
-  --btn-color: #f87171;
-  --btn-dark: #7f1d1d;
-  --btn-glow: rgba(248, 113, 113, 0.35);
-}
-
 .btns button.btn-reset {
   --btn-color: #fb923c;
   --btn-dark: #9a3412;
   --btn-glow: rgba(251, 146, 60, 0.35);
 }
 
+.cmd-tab.cmd-tab-danger {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.cmd-tab.cmd-tab-danger:hover:not(:disabled) {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.6);
+  background: rgba(248, 113, 113, 0.15);
+}
+
+.header-clear-btn {
+  display: none;
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.header-clear-btn:hover:not(:disabled) {
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.15);
+}
+
+@media (min-width: 981px) {
+  .header-clear-btn {
+    display: flex;
+    padding: 8px 12px;
+    margin-left: auto;
+  }
+}
+
 .editable-title {
-  background: transparent; 
-  border: 1px solid transparent; 
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 4px;
   color: inherit;
   font-family: inherit;
   font-size: inherit;
   font-weight: bold;
-  min-width: 50px;
-  max-width: 100px;
+  min-width: 0;
+  width: 100px;
+  max-width: 100%;
   outline: none;
   padding: 4px 6px;
   text-transform: uppercase;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
   transition: all 0.2s ease;
   cursor: pointer;
+}
+
+.command-icon-wrap {
+  min-width: 0;
+  width: 100%;
+  justify-content: center;
 }
 
 .command-label {
   font-size: 13px;
   font-weight: bold;
   text-align: center;
-  white-space: nowrap; 
+  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; 
-  max-width: 50px; 
+  text-overflow: ellipsis;
+  max-width: 50px;
+  width: 100%;
   display: block;
-  text-transform: uppercase; 
+  text-transform: uppercase;
 }
 
 .edit-icon {
@@ -910,6 +975,8 @@ gap: 26px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
@@ -1274,6 +1341,7 @@ gap: 26px;
   .cmd-tabs {
     display: flex;
     flex: none;
+    min-width: 0;
     gap: 6px;
     overflow-x: auto;
   }
@@ -1606,13 +1674,15 @@ gap: 26px;
     font-size: 15px !important;
   }
 
-  .palette-item-wrapper .command-label {
-    max-width: none;
+  .palette-item-wrapper .command-label,
+  .program-list .command-label {
+    max-width: 100%;
   }
 
   .cmd-tabs {
     display: flex;
     flex: none;
+    min-width: 0;
     gap: 6px;
     overflow-x: auto;
   }

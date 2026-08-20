@@ -20,17 +20,17 @@ import { Program } from './components/Program';
 import { Command } from './components/Command';
 import { Board } from './components/Board';
 import { WinModal } from './components/WinModal';
+import { ConfirmModal } from './components/ConfirmModal';
 import { LoopEditor } from './components/LoopEditor';
 import type { Cmd, CmdKind, Level } from './game/types';
 import {
   AiOutlineHome,
-  AiFillStar
+  AiFillStar,
+  AiOutlinePlayCircle,
+  AiOutlineReload,
+  AiOutlineCode,
+  AiOutlineDelete
 } from "react-icons/ai";
-import {
-  GiPlayButton,
-  GiBroom,
-  GiCycle
-} from "react-icons/gi";
 import './styles.css';
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -48,6 +48,7 @@ export default function App() {
   const [mascotTipOpen, setMascotTipOpen] = useState(true);
   const [activeCmdTab, setActiveCmdTab] = useState<string>('main');
   const [openLoopId, setOpenLoopId] = useState<string | null>(null);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
 
@@ -353,6 +354,18 @@ export default function App() {
               onMenu={handleMenu}
             />
 
+      <ConfirmModal
+        isOpen={confirmClearOpen}
+        title="Apagar tudo?"
+        message="Isso vai apagar todos os comandos do Programa Principal e das funções."
+        confirmLabel="Apagar"
+        onCancel={() => setConfirmClearOpen(false)}
+        onConfirm={() => {
+          dispatch({ type: 'resetProgram' });
+          setConfirmClearOpen(false);
+        }}
+      />
+
       <div className="level-controls">
        
       </div>
@@ -369,11 +382,22 @@ export default function App() {
           <div className="status-badge phase-badge">
             <span>FASE {state.level.id.padStart(2, '0')}</span>
           </div>
-          <div className="status-badge stars-badge">
+          <div className="status-badge stars-badge" title={`${currentStars} de 3 estrelas`} aria-label={`${currentStars} de 3 estrelas`}>
             <AiFillStar className="icon-star" aria-hidden="true" />
-            <span>{currentStars} / 3 estrelas</span>
+            <span>{currentStars} / 3</span>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setConfirmClearOpen(true)}
+          disabled={state.running || (state.program.length === 0 && state.functions.every(f => f.program.length === 0))}
+          className="header-clear-btn"
+          title="Limpar tudo"
+          aria-label="Limpar todos os comandos"
+        >
+          <AiOutlineDelete size={18} aria-hidden="true" />
+        </button>
       </header>
 
       <p className="sr-only" role="status" aria-live="polite">
@@ -421,27 +445,20 @@ export default function App() {
                     onClick={handleRun}
                     disabled={state.running || state.program.length === 0}
                     className="btn-action btn-run"
+                    title="Executar"
+                    aria-label="Executar"
                   >
-                    <GiPlayButton size={18} aria-hidden="true" />
-                    <span>Executar</span>
-                  </button>
-
-                  <button
-                    onClick={() => dispatch({ type: 'resetProgram' })}
-                    disabled={state.running}
-                    className="btn-action btn-clear"
-                  >
-                    <GiBroom size={18} aria-hidden="true" />
-                    <span>Limpar</span>
+                    <AiOutlinePlayCircle size={22} aria-hidden="true" />
                   </button>
 
                   <button
                     onClick={() => dispatch({ type: 'resetLevel' })}
                     disabled={state.running}
                     className="btn-action btn-reset"
+                    title="Reiniciar"
+                    aria-label="Reiniciar"
                   >
-                    <GiCycle size={18} aria-hidden="true" />
-                    <span>Reiniciar</span>
+                    <AiOutlineReload size={22} aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -480,8 +497,10 @@ export default function App() {
                       aria-controls="cmd-panel-main"
                       className={`cmd-tab ${activeCmdTab === 'main' ? 'is-active' : ''}`}
                       onClick={() => setActiveCmdTab('main')}
+                      title="Programa Principal"
+                      aria-label="Programa Principal"
                     >
-                      <span className="cmd-tab-label">Programa</span>
+                      <AiOutlineCode size={16} aria-hidden="true" />
                       <span className="cmd-tab-count">{countMain}/{limitMain}</span>
                     </button>
                     {state.functions.map((funcData) => (
@@ -494,6 +513,7 @@ export default function App() {
                         key={funcData.id}
                         className={`cmd-tab ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
                         onClick={() => setActiveCmdTab(funcData.id)}
+                        title={`Função ${funcData.name}`}
                       >
                         <span className="cmd-tab-label">{funcData.name}</span>
                         <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
@@ -510,6 +530,16 @@ export default function App() {
                         +
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setConfirmClearOpen(true)}
+                      disabled={state.running || (state.program.length === 0 && state.functions.every(f => f.program.length === 0))}
+                      className="cmd-tab cmd-tab-danger"
+                      title="Limpar tudo"
+                      aria-label="Limpar todos os comandos"
+                    >
+                      <AiOutlineDelete size={16} aria-hidden="true" />
+                    </button>
                   </div>
 
                   <div

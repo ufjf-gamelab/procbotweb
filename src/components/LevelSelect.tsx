@@ -24,9 +24,9 @@ export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Prop
 
     <header className="levels-header">
       <div className="player-progress">
-        <div className="progress-stars">
+        <div className="progress-stars" title={`${totalStars} estrelas no total`} aria-label={`${totalStars} estrelas no total`}>
           <AiFillStar aria-hidden="true" />
-          <span>{totalStars} estrelas no total</span>
+          <span>{totalStars}</span>
         </div>
       </div>
     </header>

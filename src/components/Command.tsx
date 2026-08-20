@@ -77,7 +77,7 @@ export function Command({
       } as React.CSSProperties}
       title={isLoop ? 'Clique para editar o laço' : `Arrastar para mover, Clique para remover`}
     >
-      <span aria-hidden="true" style={{ color: config.color, display: 'flex', fontSize: '24px' }}>
+      <span aria-hidden="true" className="command-icon-wrap" style={{ color: config.color, display: 'flex', fontSize: '24px' }}>
         {isFunction ? (
           <span className="command-label">
             {functionName || config.icon}
