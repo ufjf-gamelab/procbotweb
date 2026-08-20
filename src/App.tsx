@@ -21,17 +21,22 @@ import { Command } from './components/Command';
 import { Board } from './components/Board';
 import { WinModal } from './components/WinModal';
 import { ConfirmModal } from './components/ConfirmModal';
+import { MascotModal } from './components/MascotModal';
+import robotTip from './assets/robot_tip.png';
 import { LoopEditor } from './components/LoopEditor';
 import type { Cmd, CmdKind, Level } from './game/types';
 import { getFunctionTheme } from './game/constants';
+import { useGameAudio } from './game/useGameAudio';
+import { isMuted, setMuted, playClick } from './game/audio';
 import {
   AiOutlineHome,
   AiFillStar,
   AiOutlinePlayCircle,
   AiOutlinePauseCircle,
   AiOutlineReload,
-  AiOutlineCode,
-  AiOutlineDelete
+  AiOutlineDelete,
+  AiOutlineSound,
+  AiOutlineAudioMuted
 } from "react-icons/ai";
 import './styles.css';
 
@@ -49,11 +54,15 @@ export default function App() {
   const [mascotTip] = useState("Vamos lá! Arraste os comandos para o Programa Principal.");
   const [mascotTipOpen, setMascotTipOpen] = useState(true);
   const [activeCmdTab, setActiveCmdTab] = useState<string>('main');
+  const [openFunctionId, setOpenFunctionId] = useState<string | null>(null);
   const [openLoopId, setOpenLoopId] = useState<string | null>(null);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [wobbleTarget, setWobbleTarget] = useState<string | null>(null);
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
   const runLoopActiveRef = useRef(false);
+  const [muted, setMutedState] = useState(() => isMuted());
+  useGameAudio(state);
 
   useEffect(() => {
     saveSession({
@@ -90,6 +99,16 @@ export default function App() {
   }, [state.win, state.level.id, completedLevels]);
 
   useEffect(() => {
+    if (state.functions.length === 0) {
+      setOpenFunctionId(null);
+      return;
+    }
+    if (!state.functions.some(f => f.id === openFunctionId)) {
+      setOpenFunctionId(state.functions[0].id);
+    }
+  }, [state.functions, openFunctionId]);
+
+  useEffect(() => {
     if (!state.running || !state.currentCmd) return;
     const { ownerId } = state.currentCmd;
 
@@ -99,6 +118,7 @@ export default function App() {
     } else if (state.functions.some(f => f.id === ownerId)) {
       setOpenLoopId(null);
       setActiveCmdTab(ownerId);
+      setOpenFunctionId(ownerId);
     } else if (state.loops.some(l => l.id === ownerId)) {
       setOpenLoopId(ownerId);
     }
@@ -106,7 +126,7 @@ export default function App() {
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -142,7 +162,8 @@ export default function App() {
   }
 
   function handleDragStart(e: DragStartEvent) {
-  setActiveId(String(e.active.id));
+    if (state.running) return;
+    setActiveId(String(e.active.id));
   }
 
   function handleSelectLevel(level: Level) {
@@ -156,6 +177,7 @@ export default function App() {
 
   function handleDragEnd(e: DragEndEvent) {
     setActiveId(null);
+    if (state.running) return;
     const { active, over } = e;
 
     if (!over) return;
@@ -219,11 +241,18 @@ export default function App() {
         return;
       }
 
+      if (!targetContainer) return;
+
+      if (isContainerFull(targetContainer)) {
+        triggerWobble(targetContainer);
+        return;
+      }
+
       if (targetContainer === 'main') {
         dispatch({ type: 'ADD_TO_MAIN', kind });
-      } else if (targetContainer && state.loops.find(l => l.id === targetContainer)) {
+      } else if (state.loops.find(l => l.id === targetContainer)) {
         dispatch({ type: 'ADD_TO_LOOP', loopId: targetContainer, kind });
-      } else if (targetContainer && targetContainer !== 'main') {
+      } else {
         dispatch({ type: 'ADD_TO_FUNC', funcId: targetContainer, kind });
       }
       return;
@@ -256,11 +285,33 @@ export default function App() {
     }
   }
 
+  function isContainerFull(containerId: string): boolean {
+    if (containerId === 'main') return state.program.length >= (state.level.maxMain ?? 99);
+    const func = state.functions.find(f => f.id === containerId);
+    if (func) return func.program.length >= func.maxCommands;
+    const loop = state.loops.find(l => l.id === containerId);
+    if (loop) return loop.program.length >= loop.maxCommands;
+    return false;
+  }
+
+  function triggerWobble(containerId: string) {
+    setWobbleTarget(containerId);
+    window.setTimeout(() => {
+      setWobbleTarget(current => (current === containerId ? null : current));
+    }, 450);
+  }
+
   function handleAddByClick(kind: CmdKind) {
+    if (state.running) return;
     if (String(kind) === 'REPEAT_NEW') {
       dispatch({ type: 'ADD_LOOP', container: activeCmdTab });
       return;
     }
+    if (isContainerFull(activeCmdTab)) {
+      triggerWobble(activeCmdTab);
+      return;
+    }
+    playClick();
     if (activeCmdTab === 'main') {
       dispatch({ type: 'ADD_TO_MAIN', kind });
     } else {
@@ -268,12 +319,25 @@ export default function App() {
     }
   }
 
+  function handleToggleMute() {
+    const next = !muted;
+    setMuted(next);
+    setMutedState(next);
+    if (!next) playClick();
+  }
+
   function handleAddToLoop(kind: CmdKind | string) {
-    if (!openLoopId) return;
+    if (!openLoopId || state.running) return;
+    if (isContainerFull(openLoopId)) {
+      triggerWobble(openLoopId);
+      return;
+    }
+    playClick();
     dispatch({ type: 'ADD_TO_LOOP', loopId: openLoopId, kind: kind as CmdKind });
   }
 
   function handleOpenLoop(loopId: string) {
+    if (state.running) return;
     setOpenLoopId(loopId);
   }
 
@@ -282,6 +346,7 @@ export default function App() {
   }
 
   function handleDeleteLoop(loopId: string) {
+    if (state.running) return;
     const loopKind = `LOOP_${loopId}`;
     const mainCmd = state.program.find(c => c.kind === loopKind);
 
@@ -299,6 +364,7 @@ export default function App() {
   }
 
   function handleAddFunction() {
+    if (state.running) return;
     const extraCount = state.functions.length - state.level.functionsConfig.length;
     const maxExtra = state.level.maxExtraFunctions ?? 0;
     if (extraCount >= maxExtra) return;
@@ -307,9 +373,11 @@ export default function App() {
     const name = `F${state.functions.length + 1}`;
     dispatch({ type: 'ADD_FUNCTION', id, name, maxCommands: 5 });
     setActiveCmdTab(id);
+    setOpenFunctionId(id);
   }
 
   function handleRemoveFunction(funcId: string) {
+    if (state.running) return;
     dispatch({ type: 'REMOVE_FUNCTION', funcId });
     if (activeCmdTab === funcId) setActiveCmdTab('main');
   }
@@ -391,6 +459,12 @@ export default function App() {
         }}
       />
 
+      <MascotModal
+        isOpen={mascotTipOpen}
+        tip={mascotTip}
+        onClose={() => setMascotTipOpen(false)}
+      />
+
       <div className="level-controls">
        
       </div>
@@ -402,6 +476,21 @@ export default function App() {
             aria-label="Voltar ao menu de fases"
             onClick={handleBackToMenu}>
             <AiOutlineHome size={18} aria-hidden="true" />
+          </button>
+
+          <button
+            className="home-btn"
+            aria-label={muted ? 'Ativar som' : 'Silenciar som'}
+            aria-pressed={muted}
+            onClick={handleToggleMute}>
+            {muted ? <AiOutlineAudioMuted size={18} aria-hidden="true" /> : <AiOutlineSound size={18} aria-hidden="true" />}
+          </button>
+
+          <button
+            className="home-btn mascot-header-btn"
+            aria-label="Mostrar dica do mascote"
+            onClick={() => setMascotTipOpen(true)}>
+            <img src={robotTip} alt="" className="mascot-header-icon" />
           </button>
 
           <div className="status-badge phase-badge">
@@ -439,70 +528,22 @@ export default function App() {
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}>
         <main className="layout">
-          <aside className={`mascot-area ${mascotTipOpen ? 'tip-open' : ''}`}>
-          <div className="mascot-tip-container">
-            <button
-              type="button"
-              className="mascot-image-btn"
-              aria-expanded={mascotTipOpen}
-              aria-controls="mascot-speech-bubble"
-              aria-label={mascotTipOpen ? 'Ocultar dica do mascote' : 'Mostrar dica do mascote'}
-              onClick={() => setMascotTipOpen(open => !open)}
-            >
-              <img
-                src="./src/assets/robot_tip.png"
-                alt=""
-                className="mascot-image"
-              />
-            </button>
-
-            <div id="mascot-speech-bubble" className="speech-bubble" key={mascotTip}>
-              <p>{mascotTip}</p>
-            </div>
-          </div>
-        </aside>
-
           <div className="center">
             <Board level={state.level} robot={state.robot} lit={state.lit} bump={state.bump} running={state.running} />
-            <div className="controls-wrap">
-                <div className="btns">
-                  <button
-                    onClick={handleRun}
-                    disabled={!state.running && state.program.length === 0}
-                    className={`btn-action btn-run ${state.running ? 'is-stop' : ''}`}
-                    title={state.running ? 'Parar' : 'Executar'}
-                    aria-label={state.running ? 'Parar execução' : 'Executar'}
-                  >
-                    {state.running ? (
-                      <AiOutlinePauseCircle size={22} aria-hidden="true" />
-                    ) : (
-                      <AiOutlinePlayCircle size={22} aria-hidden="true" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => dispatch({ type: 'resetLevel' })}
-                    disabled={state.running}
-                    className="btn-action btn-reset"
-                    title="Reiniciar"
-                    aria-label="Reiniciar"
-                  >
-                    <AiOutlineReload size={22} aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
           </div>
 
+          {!openLoop && (
+            <div className="command-rail">
+              <Palette
+                onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
+                functions={state.functions}
+                showLoopTile={canAddLoop}
+                disabled={state.running}
+              />
+            </div>
+          )}
+
           <div className="sidebar">
-            {!openLoop && (
-              <div className="left">
-                <Palette
-                  onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
-                  functions={state.functions}
-                  showLoopTile={canAddLoop}
-                />
-              </div>
-            )}
             <div className="right">
               {openLoop ? (
                 <LoopEditor
@@ -511,90 +552,109 @@ export default function App() {
                   functions={state.functions}
                   onClose={handleCloseLoop}
                   onAddCommand={handleAddToLoop}
-                  onRemoveCommand={(cmdId) => dispatch({ type: 'REMOVE_FROM_LOOP', loopId: openLoop.id, id: cmdId })}
+                  onRemoveCommand={(cmdId) => { playClick(); dispatch({ type: 'REMOVE_FROM_LOOP', loopId: openLoop.id, id: cmdId }); }}
                   onSetTimes={(times) => dispatch({ type: 'SET_LOOP_TIMES', loopId: openLoop.id, times })}
                   onDeleteLoop={() => handleDeleteLoop(openLoop.id)}
                   executingCmdId={execCmdIdFor(openLoop.id)}
+                  disabled={state.running}
+                  wobble={wobbleTarget === openLoop.id}
                 />
               ) : (
                 <>
-                  <div className="cmd-tabs" role="tablist" aria-label="Programa e funções">
-                    <button
-                      type="button"
-                      role="tab"
-                      id="cmd-tab-main"
-                      aria-selected={activeCmdTab === 'main'}
-                      aria-controls="cmd-panel-main"
-                      className={`cmd-tab ${activeCmdTab === 'main' ? 'is-active' : ''} ${execCmdIdFor('main') ? 'is-executing-tab' : ''}`}
-                      onClick={() => setActiveCmdTab('main')}
-                      title="Programa Principal"
-                      aria-label="Programa Principal"
-                    >
-                      <AiOutlineCode size={16} aria-hidden="true" />
-                      <span className="cmd-tab-count">{countMain}/{limitMain}</span>
-                    </button>
-                    {state.functions.map((funcData) => (
-                      <button
-                        type="button"
-                        role="tab"
-                        id={`cmd-tab-${funcData.id}`}
-                        aria-selected={activeCmdTab === funcData.id}
-                        aria-controls={`cmd-panel-${funcData.id}`}
-                        key={funcData.id}
-                        className={`cmd-tab ${activeCmdTab === funcData.id ? 'is-active' : ''} ${execCmdIdFor(funcData.id) ? 'is-executing-tab' : ''}`}
-                        onClick={() => setActiveCmdTab(funcData.id)}
-                        title={`Função ${funcData.name}`}
-                        style={{ '--function-accent': getFunctionTheme(funcData.id).color } as React.CSSProperties}
-                      >
-                        <span className="cmd-tab-label">{funcData.name}</span>
-                        <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
-                      </button>
-                    ))}
-                    {canAddCustomFunction && (
-                      <button
-                        type="button"
-                        className="cmd-tab"
-                        onClick={handleAddFunction}
-                        title="Adicionar nova função"
-                        aria-label="Adicionar nova função"
-                      >
-                        +
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setConfirmClearOpen(true)}
-                      disabled={state.running || (state.program.length === 0 && state.functions.every(f => f.program.length === 0))}
-                      className="cmd-tab cmd-tab-danger"
-                      title="Limpar tudo"
-                      aria-label="Limpar todos os comandos"
-                    >
-                      <AiOutlineDelete size={16} aria-hidden="true" />
-                    </button>
-                  </div>
-
-                  <div
-                    id="cmd-panel-main"
-                    role="tabpanel"
-                    aria-labelledby="cmd-tab-main"
-                    className={`cmd-tab-panel ${activeCmdTab === 'main' ? 'is-active' : ''}`}
-                  >
+                  <div id="cmd-panel-main" className="cmd-tab-panel is-active">
                     <Program
                         programId="main"
                         title="Programa Principal"
-                        limitText={`(${countMain}/${limitMain})`}
+                        count={countMain}
+                        max={limitMain}
                         isFull={countMain >= limitMain}
                         items={state.program}
-                        onRemove={(id) => dispatch({ type: 'REMOVE_FROM_MAIN', id })}
+                        onRemove={(id) => { playClick(); dispatch({ type: 'REMOVE_FROM_MAIN', id }); }}
                         functions={state.functions}
                         loops={state.loops}
                         onOpenLoop={handleOpenLoop}
                         isSelected={activeCmdTab === 'main'}
                         onSelect={() => setActiveCmdTab('main')}
                         executingCmdId={execCmdIdFor('main')}
+                        disabled={state.running}
+                        wobble={wobbleTarget === 'main'}
+                        headerActions={
+                          <div className="btns btns-compact">
+                            <button
+                              onClick={handleRun}
+                              disabled={!state.running && state.program.length === 0}
+                              className={`btn-action btn-run ${state.running ? 'is-stop' : ''}`}
+                              title={state.running ? 'Parar' : 'Executar'}
+                              aria-label={state.running ? 'Parar execução' : 'Executar'}
+                            >
+                              {state.running ? (
+                                <AiOutlinePauseCircle size={16} aria-hidden="true" />
+                              ) : (
+                                <AiOutlinePlayCircle size={16} aria-hidden="true" />
+                              )}
+                            </button>
+
+                            <button
+                              onClick={() => { playClick(); dispatch({ type: 'resetLevel' }); }}
+                              disabled={state.running}
+                              className="btn-action btn-reset"
+                              title="Reiniciar"
+                              aria-label="Reiniciar"
+                            >
+                              <AiOutlineReload size={16} aria-hidden="true" />
+                            </button>
+                          </div>
+                        }
                       />
                   </div>
-                  {state.functions.map((funcData) => {
+
+                  {state.functions.length > 0 && (
+                    <div className="cmd-tabs" role="tablist" aria-label="Funções">
+                      {state.functions.map((funcData) => (
+                        <button
+                          type="button"
+                          role="tab"
+                          id={`cmd-tab-${funcData.id}`}
+                          aria-selected={openFunctionId === funcData.id}
+                          aria-controls={`cmd-panel-${funcData.id}`}
+                          key={funcData.id}
+                          className={`cmd-tab ${openFunctionId === funcData.id ? 'is-active' : ''} ${execCmdIdFor(funcData.id) ? 'is-executing-tab' : ''}`}
+                          onClick={() => { setOpenFunctionId(funcData.id); setActiveCmdTab(funcData.id); }}
+                          title={`Função ${funcData.name}`}
+                          style={{ '--function-accent': getFunctionTheme(funcData.id).color } as React.CSSProperties}
+                        >
+                          <span className="cmd-tab-label">{funcData.name}</span>
+                          <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
+                        </button>
+                      ))}
+                      {canAddCustomFunction && (
+                        <button
+                          type="button"
+                          className="cmd-tab"
+                          onClick={handleAddFunction}
+                          disabled={state.running}
+                          title="Adicionar nova função"
+                          aria-label="Adicionar nova função"
+                        >
+                          +
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setConfirmClearOpen(true)}
+                        disabled={state.running || (state.program.length === 0 && state.functions.every(f => f.program.length === 0))}
+                        className="cmd-tab cmd-tab-danger"
+                        title="Limpar tudo"
+                        aria-label="Limpar todos os comandos"
+                      >
+                        <AiOutlineDelete size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const funcData = state.functions.find(f => f.id === openFunctionId);
+                    if (!funcData) return null;
                     const isCustom = !state.level.functionsConfig.some(c => c.id === funcData.id);
 
                     return (
@@ -603,12 +663,13 @@ export default function App() {
                         id={`cmd-panel-${funcData.id}`}
                         role="tabpanel"
                         aria-labelledby={`cmd-tab-${funcData.id}`}
-                        className={`cmd-tab-panel ${activeCmdTab === funcData.id ? 'is-active' : ''}`}
+                        className="cmd-tab-panel is-active"
                       >
                         <Program
                           programId={funcData.id}
                           title={funcData.name}
-                          limitText={`(${funcData.program.length}/${funcData.maxCommands})`}
+                          count={funcData.program.length}
+                          max={funcData.maxCommands}
                           onTitleChange={(newName) => dispatch({
                             type: 'RENAME_FUNC',
                             funcId: funcData.id,
@@ -616,11 +677,14 @@ export default function App() {
                           })}
                           items={funcData.program}
                           isFull={funcData.program.length >= funcData.maxCommands}
-                          onRemove={(cmdId) => dispatch({
-                            type: 'REMOVE_FROM_FUNC',
-                            funcId: funcData.id,
-                            id: cmdId
-                          })}
+                          onRemove={(cmdId) => {
+                            playClick();
+                            dispatch({
+                              type: 'REMOVE_FROM_FUNC',
+                              funcId: funcData.id,
+                              id: cmdId
+                            });
+                          }}
                           functions={state.functions}
                           loops={state.loops}
                           onOpenLoop={handleOpenLoop}
@@ -629,15 +693,18 @@ export default function App() {
                           onDelete={isCustom && funcData.program.length === 0 ? () => handleRemoveFunction(funcData.id) : undefined}
                           accentColor={getFunctionTheme(funcData.id).color}
                           executingCmdId={execCmdIdFor(funcData.id)}
+                          disabled={state.running}
+                          wobble={wobbleTarget === funcData.id}
                         />
                       </div>
                     );
-                  })}
-                  {canAddCustomFunction && (
+                  })()}
+                  {canAddCustomFunction && state.functions.length === 0 && (
                     <button
                       type="button"
                       className="btn-action add-function-btn"
                       onClick={handleAddFunction}
+                      disabled={state.running}
                     >
                       <span>+ Nova função</span>
                     </button>

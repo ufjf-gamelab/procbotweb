@@ -52,7 +52,7 @@ const FUNCTION_PALETTE: { color: string; dark: string; glow: string }[] = [
   { color: '#a78bfa', dark: '#4c1d95', glow: 'rgba(167, 139, 250, 0.35)' },
   { color: '#facc15', dark: '#854d0e', glow: 'rgba(250, 204, 21, 0.35)' },
   { color: '#22d3ee', dark: '#0e7490', glow: 'rgba(34, 211, 238, 0.35)' },
-  { color: '#fb7185', dark: '#9f1239', glow: 'rgba(251, 113, 133, 0.35)' },
+  { color: '#2dd4bf', dark: '#115e59', glow: 'rgba(45, 212, 191, 0.35)' },
   { color: '#4ade80', dark: '#166534', glow: 'rgba(74, 222, 128, 0.35)' },
   { color: '#f97316', dark: '#7c2d12', glow: 'rgba(249, 115, 22, 0.35)' },
   { color: '#818cf8', dark: '#3730a3', glow: 'rgba(129, 140, 248, 0.35)' },

@@ -18,6 +18,35 @@ const bumpOffset = (dir: number) => {
   }
 };
 
+const buildAnimations = (bumpDir: number) => ({
+  jump: {
+    animate: { x: 0, y: [0, -34, 4, 0], scaleY: [1, 1.22, 0.82, 1], scaleX: [1, 0.85, 1.15, 1], rotate: 0 },
+    transition: { duration: 0.5, times: [0, 0.45, 0.75, 1], ease: 'easeOut' as const },
+  },
+  bump: {
+    animate: {
+      x: [0, bumpOffset(bumpDir).x, 0],
+      y: [0, bumpOffset(bumpDir).y, 0],
+      scaleX: [1, 0.85, 1],
+      scaleY: [1, 1.12, 1],
+      rotate: 0,
+    },
+    transition: { duration: 0.3, times: [0, 0.4, 1], ease: 'easeOut' as const },
+  },
+  step: {
+    animate: { x: 0, y: [0, 6, -16, -2, 0], scaleY: [1, 0.82, 1.2, 0.92, 1], scaleX: [1, 1.15, 0.86, 1.06, 1], rotate: 0 },
+    transition: { duration: 0.46, times: [0, 0.15, 0.55, 0.8, 1], ease: 'easeInOut' as const },
+  },
+  turn: {
+    animate: { x: 0, y: 0, rotate: [0, -10, 8, 0], scaleX: [1, 0.88, 0.94, 1], scaleY: [1, 1.08, 1.02, 1] },
+    transition: { duration: 0.32, times: [0, 0.4, 0.75, 1], ease: 'easeOut' as const },
+  },
+  idle: {
+    animate: { x: 0, y: 0, rotate: 0, scaleY: 1, scaleX: 1 },
+    transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
+  },
+});
+
 export function Board({
   level, robot, lit, bump, running
 }: {
@@ -110,6 +139,8 @@ export function Board({
       
       const showJump = isRobotHere && celebrating;
       const showBump = isRobotHere && bumping && !!running;
+      const animKind = showJump ? 'jump' : showBump ? 'bump' : moveEffect === 'step' ? 'step' : moveEffect === 'turn' ? 'turn' : 'idle';
+      const anim = buildAnimations(bump?.dir ?? 0)[animKind];
 
       cells.push(
         <div 
@@ -129,24 +160,8 @@ export function Board({
               }}
             >
               <motion.div
-                animate={
-                  showJump
-                    ? { x: 0, y: [0, -30, 0], rotate: 0, scaleY: 1 }
-                    : showBump
-                      ? { x: [0, bumpOffset(bump!.dir).x, 0], y: [0, bumpOffset(bump!.dir).y, 0] }
-                      : moveEffect === 'step'
-                        ? { x: 0, y: [0, -6, 0], scaleY: [1, 0.96, 1] }
-                        : { x: 0, y: 0, rotate: 0, scaleY: 1 }
-                }
-                transition={
-                  showJump
-                    ? { duration: 0.4, times: [0, 0.5, 1] }
-                    : showBump
-                      ? { duration: 0.3, ease: "easeOut" }
-                      : moveEffect === 'step'
-                        ? { duration: 0.42, ease: "easeInOut" }
-                        : { type: "spring", stiffness: 300, damping: 30 }
-                }
+                animate={anim.animate}
+                transition={anim.transition}
                 style={{ width: '100%', height: '100%', position: 'relative' }}
               >
                 {(() => {

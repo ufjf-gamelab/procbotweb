@@ -82,7 +82,17 @@ function applyCmd(state: GameState, kind: CmdKind): GameState {
   return s;
 }
 
+const EDIT_ACTION_TYPES = new Set<Action['type']>([
+  'add', 'remove', 'reorder', 'resetProgram', 'setProgram',
+  'ADD_TO_MAIN', 'REMOVE_FROM_MAIN', 'SET_PROGRAM_MAIN',
+  'ADD_TO_FUNC', 'REMOVE_FROM_FUNC', 'SET_PROGRAM_FUNC', 'RENAME_FUNC',
+  'MOVE_COMMAND', 'ADD_FUNCTION', 'REMOVE_FUNCTION',
+  'ADD_LOOP', 'ADD_TO_LOOP', 'REMOVE_FROM_LOOP', 'SET_PROGRAM_LOOP', 'SET_LOOP_TIMES',
+]);
+
 export function reducer(state: GameState, action: Action): GameState {
+  if (state.running && EDIT_ACTION_TYPES.has(action.type)) return state;
+
   switch (action.type) {
     case 'add':
       return { ...state, program: [...state.program, { id: crypto.randomUUID(), kind: action.kind }] };

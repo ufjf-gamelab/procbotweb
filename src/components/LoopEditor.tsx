@@ -13,9 +13,11 @@ type Props = {
   onSetTimes: (times: number) => void;
   onDeleteLoop: () => void;
   executingCmdId?: string | null;
+  disabled?: boolean;
+  wobble?: boolean;
 };
 
-export function LoopEditor({ loop, loopsConfig, functions, onClose, onAddCommand, onRemoveCommand, onSetTimes, onDeleteLoop, executingCmdId }: Props) {
+export function LoopEditor({ loop, loopsConfig, functions, onClose, onAddCommand, onRemoveCommand, onSetTimes, onDeleteLoop, executingCmdId, disabled, wobble }: Props) {
   const isFull = loop.program.length >= loop.maxCommands;
 
   return (
@@ -31,7 +33,7 @@ export function LoopEditor({ loop, loopsConfig, functions, onClose, onAddCommand
           <button
             type="button"
             onClick={() => onSetTimes(loop.times - 1)}
-            disabled={loop.times <= loopsConfig.minTimes}
+            disabled={disabled || loop.times <= loopsConfig.minTimes}
           >
             <AiOutlineMinus size={14} />
           </button>
@@ -39,31 +41,34 @@ export function LoopEditor({ loop, loopsConfig, functions, onClose, onAddCommand
           <button
             type="button"
             onClick={() => onSetTimes(loop.times + 1)}
-            disabled={loop.times >= loopsConfig.maxTimes}
+            disabled={disabled || loop.times >= loopsConfig.maxTimes}
           >
             <AiOutlinePlus size={14} />
           </button>
           <span>vezes</span>
         </div>
 
-        <button type="button" className="loop-delete-btn" title="Remover repetição" onClick={onDeleteLoop}>
+        <button type="button" className="loop-delete-btn" title="Remover repetição" onClick={onDeleteLoop} disabled={disabled}>
           <AiOutlineDelete size={16} />
           <span>Excluir</span>
         </button>
       </div>
 
-      <Palette onCommandClick={onAddCommand} functions={functions} />
+      <Palette onCommandClick={onAddCommand} functions={functions} disabled={disabled} />
 
       <Program
         programId={loop.id}
         title="Dentro do Repetir"
-        limitText={`(${loop.program.length}/${loop.maxCommands})`}
+        count={loop.program.length}
+        max={loop.maxCommands}
         isFull={isFull}
         items={loop.program}
         onRemove={onRemoveCommand}
         functions={functions}
         isSelected
         executingCmdId={executingCmdId}
+        disabled={disabled}
+        wobble={wobble}
       />
     </section>
   );

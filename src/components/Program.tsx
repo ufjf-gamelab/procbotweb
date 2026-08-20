@@ -11,7 +11,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Cmd } from '../game/types';
 import { Command } from './Command';
 
-function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLoop, isExecuting }: { item: Cmd; onRemove: (id: string) => void; functionName?: string; loopTimes?: number; onOpenLoop?: () => void; isExecuting?: boolean }) {
+function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLoop, isExecuting, disabled }: { item: Cmd; onRemove: (id: string) => void; functionName?: string; loopTimes?: number; onOpenLoop?: () => void; isExecuting?: boolean; disabled?: boolean }) {
   const {
     attributes,
     listeners,
@@ -19,7 +19,7 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `prog-${item.id}` });
+  } = useSortable({ id: `prog-${item.id}`, disabled });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -27,6 +27,7 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
     opacity: isDragging ? 0.3 : 1,
     position: 'relative' as const,
     zIndex: isDragging ? 1 : 0,
+    touchAction: 'manipulation' as const,
   };
 
   return (
@@ -34,8 +35,8 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
       <Command
         kind={item.kind}
         id={item.id}
-        onRemove={onRemove}
-        onOpen={onOpenLoop}
+        onRemove={disabled ? undefined : onRemove}
+        onOpen={disabled ? undefined : onOpenLoop}
         attributes={attributes}
         listeners={listeners}
         functionName={functionName}
@@ -48,8 +49,8 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
 }
 
 
-export function Program({ programId, title, limitText, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete, accentColor, executingCmdId }:
-  { programId: string; title: string; limitText: string;
+export function Program({ programId, title, count, max, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete, accentColor, executingCmdId, disabled, headerActions, wobble }:
+  { programId: string; title: string; count: number; max: number;
     onTitleChange?: (newName: string) => void;
     isFull: boolean;
     items: Cmd[], onRemove: (id: string)=>void;
@@ -61,11 +62,15 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
   onDelete?: () => void;
   accentColor?: string;
   executingCmdId?: string | null;
+  disabled?: boolean;
+  headerActions?: React.ReactNode;
+  wobble?: boolean;
  }) {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const { setNodeRef } = useDroppable({
     id: `program-drop-${programId}`,
+    disabled,
   });
 
   const { over } = useDndContext();
@@ -77,6 +82,7 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
   if (isOverContainer) {
     dropClassName += isFull ? " is-full" : " is-valid";
   }
+  if (disabled) dropClassName += " is-locked";
 
   const panelStyle = accentColor
     ? ({ '--function-accent': accentColor, borderColor: accentColor } as React.CSSProperties)
@@ -85,34 +91,48 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
   return (
     <section className={clsx('panel', isSelected && 'is-target')} style={panelStyle}>
       <h3 onClick={onSelect} style={onSelect ? { cursor: 'pointer' } : undefined}>
-        {onTitleChange ? (
+        {onTitleChange && !disabled ? (
           <div className="editable-title-wrapper" onClick={() => inputRef.current?.focus()}>
             <svg className="edit-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
             </svg>
-            <input 
+            <input
               ref={inputRef}
-              type="text" 
-              value={title} 
+              type="text"
+              value={title}
               onChange={(e) => onTitleChange(e.target.value)}
               className="editable-title"
               maxLength={12}
             />
           </div>
+        ) : onTitleChange ? (
+          <span className="editable-title-wrapper" title={title} aria-label={title}>
+            {title}
+          </span>
         ) : (
           <span title={title} aria-label={title}>
             <AiOutlineCode size={18} aria-hidden="true" />
           </span>
         )}
         
-        {limitText && (
-          <span className={`limit-count ${isFull ? 'is-full' : ''}`}>
-            {limitText}
+        {headerActions && (
+          <span className="program-header-actions" onClick={(e) => e.stopPropagation()}>
+            {headerActions}
           </span>
         )}
 
-        {onDelete && (
+        <span className={`limit-progress ${isFull ? 'is-full' : ''} ${wobble ? 'is-wobbling' : ''}`} title={`${count}/${max} comandos`}>
+          <span className="limit-progress-track">
+            <span
+              className="limit-progress-fill"
+              style={{ width: `${max > 0 ? Math.min(100, (count / max) * 100) : 0}%` }}
+            />
+          </span>
+          <span className="limit-progress-label">{count}/{max}</span>
+        </span>
+
+        {onDelete && !disabled && (
           <button
             type="button"
             className="delete-function-btn"
@@ -157,6 +177,7 @@ export function Program({ programId, title, limitText, onTitleChange, isFull, it
                 loopTimes={loopData?.times}
                 onOpenLoop={isLoop ? () => onOpenLoop?.(loopData?.id ?? String(cmd.kind).replace('LOOP_', '')) : undefined}
                 isExecuting={cmd.id === executingCmdId}
+                disabled={disabled}
               />
             );
           })}

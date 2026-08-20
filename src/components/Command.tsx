@@ -71,6 +71,7 @@ export function Command({
         '--block-glow': config.glow,
         borderColor: isDragging ? config.color : undefined,
         cursor: 'grab',
+        touchAction: 'manipulation',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',

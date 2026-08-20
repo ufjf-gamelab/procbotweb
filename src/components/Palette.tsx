@@ -11,16 +11,18 @@ type PalItemProps = {
   kind: string;
   onCommandClick: () => void;
   dynamicLabel?: string;
+  disabled?: boolean;
 };
 
-function PalItem({ kind, onCommandClick, dynamicLabel }: PalItemProps) {
+function PalItem({ kind, onCommandClick, dynamicLabel, disabled }: PalItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({ id: `pal-${kind}` });
+    useDraggable({ id: `pal-${kind}`, disabled });
 
   const style = {
-    transform: CSS.Translate.toString(transform), 
-    opacity: isDragging ? 0.6 : 1,
-    touchAction: 'none',
+    transform: CSS.Translate.toString(transform),
+    opacity: disabled ? 0.5 : isDragging ? 0.6 : 1,
+    touchAction: 'manipulation',
+    pointerEvents: disabled ? 'none' as const : undefined,
   };
 
   return (
@@ -28,17 +30,17 @@ function PalItem({ kind, onCommandClick, dynamicLabel }: PalItemProps) {
       ref={setNodeRef}
       style={style}
       className="palette-item-wrapper"
-      whileHover={{ scale: 1.04 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onCommandClick}
+      whileHover={disabled ? undefined : { scale: 1.04 }}
+      whileTap={disabled ? undefined : { scale: 0.98 }}
+      onClick={disabled ? undefined : onCommandClick}
     >
-      <Command 
+      <Command
         kind={kind as CmdKind}
-        id={`pal-${kind}`} 
+        id={`pal-${kind}`}
         isDragging={isDragging}
         attributes={attributes}
         listeners={listeners}
-        functionName={dynamicLabel} 
+        functionName={dynamicLabel}
       />
     </motion.div>
   );
@@ -48,9 +50,10 @@ type PaletteProps = {
   onCommandClick: (kind: CmdKind| string) => void;
   functions: { id: string; name: string }[];
   showLoopTile?: boolean;
+  disabled?: boolean;
 };
 
-export function Palette({onCommandClick, functions = [], showLoopTile = false}: PaletteProps) {
+export function Palette({onCommandClick, functions = [], showLoopTile = false, disabled = false}: PaletteProps) {
   return (
     <section className="panel" aria-label="Paleta de comandos">
       <div className="palette-grid">
@@ -59,6 +62,7 @@ export function Palette({onCommandClick, functions = [], showLoopTile = false}: 
             key={k}
             kind={k}
             onCommandClick={() => onCommandClick(k)}
+            disabled={disabled}
           />
         ))}
         {functions.map(f => {
@@ -70,6 +74,7 @@ export function Palette({onCommandClick, functions = [], showLoopTile = false}: 
               kind={cmdKind}
               onCommandClick={() => onCommandClick(cmdKind)}
               dynamicLabel={f.name}
+              disabled={disabled}
             />
           );
         })}
@@ -77,6 +82,7 @@ export function Palette({onCommandClick, functions = [], showLoopTile = false}: 
           <PalItem
             kind="REPEAT_NEW"
             onCommandClick={() => onCommandClick('REPEAT_NEW')}
+            disabled={disabled}
           />
         )}
       </div>
