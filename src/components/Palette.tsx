@@ -1,6 +1,7 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
+import { AiOutlineTool } from 'react-icons/ai';
 import type { CmdKind } from '../game/types';
 // import { CMD_CONFIG } from '../game/constants';
 import { Command } from './Command';
@@ -56,6 +57,7 @@ type PaletteProps = {
 export function Palette({onCommandClick, functions = [], showLoopTile = false, disabled = false}: PaletteProps) {
   return (
     <section className="panel" aria-label="Paleta de comandos">
+      <AiOutlineTool className="palette-title-icon" size={16} aria-hidden="true" />
       <div className="palette-grid">
         {BASE_COMMANDS.map(k => (
           <PalItem

@@ -43,8 +43,8 @@ import {
   AiOutlineEdit,
   AiOutlineSetting
 } from "react-icons/ai";
-import { IoVolumeHighOutline, IoVolumeMuteOutline } from "react-icons/io5";
 import { GiTurtle, GiRabbit, GiSprint } from "react-icons/gi";
+import { SettingsModal } from './components/SettingsModal';
 import './styles.css';
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -80,7 +80,8 @@ export default function App() {
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [renamingFuncId, setRenamingFuncId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const settingsRef = useRef<HTMLDivElement>(null);
+  const boardAreaRef = useRef<HTMLDivElement>(null);
+  const [navCenterX, setNavCenterX] = useState<number | null>(null);
   const [wobbleTarget, setWobbleTarget] = useState<string | null>(null);
   const [tutorialSeen, setTutorialSeen] = useState(() => hasSeenTutorial());
   const stateRef = useRef(state);
@@ -107,6 +108,41 @@ export default function App() {
   }, [completedLevels, levelStars, view, state]);
 
   useEffect(() => {
+    if (view !== 'GAME') return;
+    // .center usa display:contents no breakpoint mobile portrait (sem caixa própria,
+    // getBoundingClientRect some) — mede o board-wrap real dentro dele, que sempre tem caixa.
+    const el = boardAreaRef.current?.querySelector('[data-tutorial="board"]') ?? boardAreaRef.current;
+    if (!el) return;
+
+    // No breakpoint landscape mobile o header vira nav lateral fixa (CSS puro,
+    // sem centralização via JS) — não precisa/deve medir o centro do tabuleiro.
+    const landscapeMobile = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
+
+    function measure() {
+      if (window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches) {
+        setNavCenterX(null);
+        return;
+      }
+      const rect = el!.getBoundingClientRect();
+      if (rect.width === 0) return;
+      setNavCenterX(rect.left + rect.width / 2);
+    }
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    landscapeMobile.addEventListener('change', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+      landscapeMobile.removeEventListener('change', measure);
+    };
+  }, [view, openLoopId]);
+
+  useEffect(() => {
     if (state.win) {
       if (!completedLevels.includes(state.level.id)) {
         setCompletedLevels(prev => [...prev, state.level.id]);
@@ -124,24 +160,6 @@ export default function App() {
       setShowWinModal(false);
     }
   }, [state.win, state.level.id, completedLevels]);
-
-  useEffect(() => {
-    if (!settingsOpen) return;
-    function handlePointerDown(e: MouseEvent) {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false);
-      }
-    }
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setSettingsOpen(false);
-    }
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [settingsOpen]);
 
   useEffect(() => {
     if (state.functions.length === 0) {
@@ -480,6 +498,47 @@ export default function App() {
 
   const showTutorial = view === 'GAME' && state.level.id === '1' && !tutorialSeen;
 
+  function renderRunControls() {
+    return (
+      <div className="btns btns-compact">
+        <button
+          onClick={handleRun}
+          disabled={!state.running && state.program.length === 0}
+          className={`btn-action btn-run ${state.running ? 'is-stop' : ''}`}
+          title={state.running ? 'Parar' : 'Executar'}
+          aria-label={state.running ? 'Parar execução' : 'Executar'}
+          data-tutorial="play-button"
+        >
+          {state.running ? (
+            <AiOutlinePauseCircle size={16} aria-hidden="true" />
+          ) : (
+            <AiOutlinePlayCircle size={16} aria-hidden="true" />
+          )}
+        </button>
+
+        <button
+          onClick={handleStep}
+          disabled={autoPlaying || state.program.length === 0}
+          className="btn-action btn-step"
+          title="Passo a passo"
+          aria-label="Executar um comando por vez"
+        >
+          <AiOutlineStepForward size={16} aria-hidden="true" />
+        </button>
+
+        <button
+          onClick={() => { playClick(); dispatch({ type: 'resetLevel' }); }}
+          disabled={state.running}
+          className="btn-action btn-reset"
+          title="Reiniciar"
+          aria-label="Reiniciar"
+        >
+          <AiOutlineReload size={16} aria-hidden="true" />
+        </button>
+      </div>
+    );
+  }
+
   const activeCommand: Cmd | undefined = activeId
     ? (
       state.program.find(cmd => `prog-${cmd.id}` === activeId) ||
@@ -554,64 +613,59 @@ export default function App() {
         />
       )}
 
+      <SettingsModal
+        isOpen={settingsOpen}
+        muted={muted}
+        speedInfo={SPEED_CONFIG[speed]}
+        onToggleMute={handleToggleMute}
+        onCycleSpeed={handleCycleSpeed}
+        onClose={() => setSettingsOpen(false)}
+      />
+
       <div className="level-controls">
        
       </div>
 
         <header className="game-header">
-        <div className="header-center">
-          <button
-            className="home-btn"
-            aria-label="Voltar ao menu de fases"
-            onClick={handleBackToMenu}>
-            <AiOutlineHome size={18} aria-hidden="true" />
-          </button>
-
-          <button
-            className="home-btn mascot-header-btn"
-            aria-label="Mostrar dica do mascote"
-            onClick={() => setMascotTipOpen(true)}>
-            <img src={robotTip} alt="" className="mascot-header-icon" />
-          </button>
-
-          <div className="settings-menu" ref={settingsRef}>
+        <div
+          className="header-center"
+          style={navCenterX != null ? { position: 'absolute', top: 0, height: '100%', left: navCenterX, transform: 'translateX(-50%)' } : undefined}
+        >
+          <div className="nav-group">
             <button
-              className="home-btn"
-              aria-label="Configurações"
-              aria-haspopup="true"
-              aria-expanded={settingsOpen}
-              onClick={() => setSettingsOpen(o => !o)}>
-              <AiOutlineSetting size={18} aria-hidden="true" />
+              className="home-btn nav-home-btn"
+              aria-label="Voltar ao menu de fases"
+              onClick={handleBackToMenu}>
+              <AiOutlineHome size={18} aria-hidden="true" />
             </button>
 
-            {settingsOpen && (
-              <div className="settings-popover" role="menu">
-                <button
-                  className="settings-popover-item"
-                  role="menuitem"
-                  aria-pressed={muted}
-                  onClick={handleToggleMute}>
-                  {muted ? <IoVolumeMuteOutline size={18} aria-hidden="true" /> : <IoVolumeHighOutline size={18} aria-hidden="true" />}
-                  <span>{muted ? 'Ativar som' : 'Silenciar som'}</span>
-                </button>
+            <button
+              className="home-btn mascot-header-btn"
+              aria-label="Mostrar dica do mascote"
+              onClick={() => setMascotTipOpen(true)}>
+              <img src={robotTip} alt="" className="mascot-header-icon" />
+            </button>
 
-                <button
-                  className="settings-popover-item"
-                  role="menuitem"
-                  onClick={handleCycleSpeed}>
-                  {(() => { const { Icon } = SPEED_CONFIG[speed]; return <Icon size={18} aria-hidden="true" />; })()}
-                  <span>Velocidade: {SPEED_CONFIG[speed].label}</span>
-                </button>
-              </div>
-            )}
+            <button
+              className="home-btn settings-header-btn"
+              aria-label="Configurações"
+              aria-haspopup="dialog"
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen(true)}>
+              <AiOutlineSetting size={18} aria-hidden="true" />
+            </button>
           </div>
 
-          <div className="status-badge phase-badge">
-            <span>FASE {state.level.id.padStart(2, '0')}</span>
-          </div>
-          <div className="status-badge stars-badge" title={`${currentStars} de 3 estrelas`} aria-label={`${currentStars} de 3 estrelas`}>
-            <AiFillStar className="icon-star" aria-hidden="true" />
-            <span>{currentStars} / 3</span>
+          <div className="nav-hud-card">
+            <div className="status-badge phase-badge">
+              <span className="phase-badge-label">FASE </span>
+              <span className="phase-badge-number">{state.level.id.padStart(2, '0')}</span>
+            </div>
+            <div className="status-badge stars-badge" title={`${currentStars} de 3 estrelas`} aria-label={`${currentStars} de 3 estrelas`}>
+              <AiFillStar className="icon-star" aria-hidden="true" />
+              <span className="stars-badge-value">{currentStars}</span>
+              <span className="stars-badge-suffix"> / 3</span>
+            </div>
           </div>
         </div>
       </header>
@@ -630,7 +684,7 @@ export default function App() {
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}>
         <main className="layout">
-          <div className="center">
+          <div className="center" ref={boardAreaRef}>
             <Board level={state.level} robot={state.robot} lit={state.lit} bump={state.bump} running={state.running} />
           </div>
 
@@ -680,44 +734,7 @@ export default function App() {
                         executingCmdId={execCmdIdFor('main')}
                         disabled={state.running}
                         wobble={wobbleTarget === 'main'}
-                        headerActions={
-                          <div className="btns btns-compact">
-                            <button
-                              onClick={handleRun}
-                              disabled={!state.running && state.program.length === 0}
-                              className={`btn-action btn-run ${state.running ? 'is-stop' : ''}`}
-                              title={state.running ? 'Parar' : 'Executar'}
-                              aria-label={state.running ? 'Parar execução' : 'Executar'}
-                              data-tutorial="play-button"
-                            >
-                              {state.running ? (
-                                <AiOutlinePauseCircle size={16} aria-hidden="true" />
-                              ) : (
-                                <AiOutlinePlayCircle size={16} aria-hidden="true" />
-                              )}
-                            </button>
-
-                            <button
-                              onClick={handleStep}
-                              disabled={autoPlaying || state.program.length === 0}
-                              className="btn-action btn-step"
-                              title="Passo a passo"
-                              aria-label="Executar um comando por vez"
-                            >
-                              <AiOutlineStepForward size={16} aria-hidden="true" />
-                            </button>
-
-                            <button
-                              onClick={() => { playClick(); dispatch({ type: 'resetLevel' }); }}
-                              disabled={state.running}
-                              className="btn-action btn-reset"
-                              title="Reiniciar"
-                              aria-label="Reiniciar"
-                            >
-                              <AiOutlineReload size={16} aria-hidden="true" />
-                            </button>
-                          </div>
-                        }
+                        headerActions={renderRunControls()}
                         cornerAction={
                           <div className="btns btns-compact">
                             <button
@@ -880,6 +897,12 @@ export default function App() {
                 </>
               )}
             </div>
+
+            {!openLoop && (
+              <div className="action-tray">
+                {renderRunControls()}
+              </div>
+            )}
           </div>
         </main>
         <DragOverlay dropAnimation={null}>

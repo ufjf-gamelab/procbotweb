@@ -90,8 +90,14 @@ export function Tutorial({ steps, onFinish }: Props) {
 
   useLayoutEffect(() => {
     function measureTarget() {
-      const el = document.querySelector(`[data-tutorial="${step.target}"]`);
-      setRect(el ? el.getBoundingClientRect() : null);
+      const candidates = document.querySelectorAll(`[data-tutorial="${step.target}"]`);
+      let visibleRect: DOMRect | null = null;
+      candidates.forEach((el) => {
+        if (visibleRect) return;
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) visibleRect = r;
+      });
+      setRect(visibleRect);
     }
     measureTarget();
     window.addEventListener('resize', measureTarget);
