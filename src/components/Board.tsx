@@ -34,7 +34,7 @@ const buildAnimations = (bumpDir: number) => ({
     transition: { duration: 0.3, times: [0, 0.4, 1], ease: 'easeOut' as const },
   },
   step: {
-    animate: { x: 0, y: [0, 6, -16, -2, 0], scaleY: [1, 0.82, 1.2, 0.92, 1], scaleX: [1, 1.15, 0.86, 1.06, 1], rotate: 0 },
+    animate: { x: 0, y: [0, 3, -8, -1, 0], scaleY: [1, 0.93, 1.08, 0.97, 1], scaleX: [1, 1.06, 0.94, 1.02, 1], rotate: 0 },
     transition: { duration: 0.46, times: [0, 0.15, 0.55, 0.8, 1], ease: 'easeInOut' as const },
   },
   turn: {
