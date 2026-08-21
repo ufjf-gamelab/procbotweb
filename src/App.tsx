@@ -30,20 +30,31 @@ import type { Cmd, CmdKind, Level } from './game/types';
 import { getFunctionTheme } from './game/constants';
 import { useGameAudio } from './game/useGameAudio';
 import { isMuted, setMuted, playClick } from './game/audio';
-import { hasSeenTutorial, markTutorialSeen } from './game/persistence';
+import { hasSeenTutorial, markTutorialSeen, getSpeed, setSpeed } from './game/persistence';
+import type { Speed } from './game/persistence';
 import {
   AiOutlineHome,
   AiFillStar,
   AiOutlinePlayCircle,
   AiOutlinePauseCircle,
+  AiOutlineStepForward,
   AiOutlineReload,
   AiOutlineDelete,
-  AiOutlineSound,
-  AiOutlineAudioMuted
+  AiOutlineEdit,
+  AiOutlineSetting
 } from "react-icons/ai";
+import { IoVolumeHighOutline, IoVolumeMuteOutline } from "react-icons/io5";
+import { GiTurtle, GiRabbit, GiSprint } from "react-icons/gi";
 import './styles.css';
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+const SPEED_ORDER: Speed[] = ['slow', 'normal', 'fast'];
+const SPEED_CONFIG: Record<Speed, { label: string; stepDelay: number; Icon: typeof GiTurtle }> = {
+  slow: { label: 'Lento', stepDelay: 900, Icon: GiTurtle },
+  normal: { label: 'Normal', stepDelay: 500, Icon: GiRabbit },
+  fast: { label: 'Rápido', stepDelay: 250, Icon: GiSprint },
+};
 
 const TUTORIAL_STEPS: TutorialStep[] = [
   { target: 'board', text: 'Esse é o tabuleiro! Seu robô precisa se mover até a lâmpada e acender ela. 💡' },
@@ -67,12 +78,17 @@ export default function App() {
   const [openFunctionId, setOpenFunctionId] = useState<string | null>(null);
   const [openLoopId, setOpenLoopId] = useState<string | null>(null);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [renamingFuncId, setRenamingFuncId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
   const [wobbleTarget, setWobbleTarget] = useState<string | null>(null);
   const [tutorialSeen, setTutorialSeen] = useState(() => hasSeenTutorial());
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
   const runLoopActiveRef = useRef(false);
   const [muted, setMutedState] = useState(() => isMuted());
+  const [speed, setSpeedState] = useState<Speed>(() => getSpeed());
+  const [autoPlaying, setAutoPlaying] = useState(false);
   useGameAudio(state);
 
   useEffect(() => {
@@ -108,6 +124,24 @@ export default function App() {
       setShowWinModal(false);
     }
   }, [state.win, state.level.id, completedLevels]);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    function handlePointerDown(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSettingsOpen(false);
+    }
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [settingsOpen]);
 
   useEffect(() => {
     if (state.functions.length === 0) {
@@ -150,10 +184,13 @@ export default function App() {
     }
 
     runLoopActiveRef.current = true;
+    setAutoPlaying(true);
     dispatch({ type: 'resetLevel' });
 
+    const stepDelay = SPEED_CONFIG[speed].stepDelay;
+
     try {
-      await delay(400);
+      await delay(300);
       dispatch({ type: 'setRunning', value: true });
 
       while (
@@ -161,7 +198,7 @@ export default function App() {
         !stateRef.current.win
       ) {
         dispatch({ type: 'stepOnce' });
-        await delay(500);
+        await delay(stepDelay);
 
         if (!stateRef.current.running) break;
       }
@@ -169,7 +206,19 @@ export default function App() {
       dispatch({ type: 'setRunning', value: false });
     } finally {
       runLoopActiveRef.current = false;
+      setAutoPlaying(false);
     }
+  }
+
+  function handleStep() {
+    if (state.program.length === 0 || autoPlaying) return;
+    playClick();
+
+    if (!state.running) {
+      dispatch({ type: 'resetLevel' });
+      dispatch({ type: 'setRunning', value: true });
+    }
+    dispatch({ type: 'stepOnce' });
   }
 
   function handleDragStart(e: DragStartEvent) {
@@ -337,6 +386,14 @@ export default function App() {
     if (!next) playClick();
   }
 
+  function handleCycleSpeed() {
+    const nextIndex = (SPEED_ORDER.indexOf(speed) + 1) % SPEED_ORDER.length;
+    const next = SPEED_ORDER[nextIndex];
+    setSpeed(next);
+    setSpeedState(next);
+    playClick();
+  }
+
   function handleAddToLoop(kind: CmdKind | string) {
     if (!openLoopId || state.running) return;
     if (isContainerFull(openLoopId)) {
@@ -438,8 +495,17 @@ export default function App() {
   const loopsConfig = state.level.loopsConfig;
   const canAddLoop = !!loopsConfig && state.loops.length < loopsConfig.maxLoops;
   const openLoop = openLoopId ? state.loops.find(l => l.id === openLoopId) : undefined;
-  const execCmdIdFor = (ownerId: string) =>
-    state.running && state.currentCmd?.ownerId === ownerId ? state.currentCmd.id : null;
+
+  const activeChainByOwner = new Map<string, string>();
+  if (state.running) {
+    for (let i = 0; i < state.callStack.length - 1; i++) {
+      const frame = state.callStack[i];
+      const cmd = frame.program[frame.stepIndex];
+      if (cmd) activeChainByOwner.set(frame.ownerId, cmd.id);
+    }
+    if (state.currentCmd) activeChainByOwner.set(state.currentCmd.ownerId, state.currentCmd.id);
+  }
+  const execCmdIdFor = (ownerId: string) => activeChainByOwner.get(ownerId) ?? null;
 
   if (view === 'MENU') {
     return (
@@ -502,19 +568,43 @@ export default function App() {
           </button>
 
           <button
-            className="home-btn"
-            aria-label={muted ? 'Ativar som' : 'Silenciar som'}
-            aria-pressed={muted}
-            onClick={handleToggleMute}>
-            {muted ? <AiOutlineAudioMuted size={18} aria-hidden="true" /> : <AiOutlineSound size={18} aria-hidden="true" />}
-          </button>
-
-          <button
             className="home-btn mascot-header-btn"
             aria-label="Mostrar dica do mascote"
             onClick={() => setMascotTipOpen(true)}>
             <img src={robotTip} alt="" className="mascot-header-icon" />
           </button>
+
+          <div className="settings-menu" ref={settingsRef}>
+            <button
+              className="home-btn"
+              aria-label="Configurações"
+              aria-haspopup="true"
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen(o => !o)}>
+              <AiOutlineSetting size={18} aria-hidden="true" />
+            </button>
+
+            {settingsOpen && (
+              <div className="settings-popover" role="menu">
+                <button
+                  className="settings-popover-item"
+                  role="menuitem"
+                  aria-pressed={muted}
+                  onClick={handleToggleMute}>
+                  {muted ? <IoVolumeMuteOutline size={18} aria-hidden="true" /> : <IoVolumeHighOutline size={18} aria-hidden="true" />}
+                  <span>{muted ? 'Ativar som' : 'Silenciar som'}</span>
+                </button>
+
+                <button
+                  className="settings-popover-item"
+                  role="menuitem"
+                  onClick={handleCycleSpeed}>
+                  {(() => { const { Icon } = SPEED_CONFIG[speed]; return <Icon size={18} aria-hidden="true" />; })()}
+                  <span>Velocidade: {SPEED_CONFIG[speed].label}</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="status-badge phase-badge">
             <span>FASE {state.level.id.padStart(2, '0')}</span>
@@ -524,17 +614,6 @@ export default function App() {
             <span>{currentStars} / 3</span>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setConfirmClearOpen(true)}
-          disabled={state.running || (state.program.length === 0 && state.functions.every(f => f.program.length === 0))}
-          className="header-clear-btn"
-          title="Limpar tudo"
-          aria-label="Limpar todos os comandos"
-        >
-          <AiOutlineDelete size={18} aria-hidden="true" />
-        </button>
       </header>
 
       <p className="sr-only" role="status" aria-live="polite">
@@ -619,6 +698,16 @@ export default function App() {
                             </button>
 
                             <button
+                              onClick={handleStep}
+                              disabled={autoPlaying || state.program.length === 0}
+                              className="btn-action btn-step"
+                              title="Passo a passo"
+                              aria-label="Executar um comando por vez"
+                            >
+                              <AiOutlineStepForward size={16} aria-hidden="true" />
+                            </button>
+
+                            <button
                               onClick={() => { playClick(); dispatch({ type: 'resetLevel' }); }}
                               disabled={state.running}
                               className="btn-action btn-reset"
@@ -629,32 +718,103 @@ export default function App() {
                             </button>
                           </div>
                         }
+                        cornerAction={
+                          <div className="btns btns-compact">
+                            <button
+                              onClick={() => setConfirmClearOpen(true)}
+                              disabled={state.running || (state.program.length === 0 && state.functions.every(f => f.program.length === 0))}
+                              className="btn-action btn-clear"
+                              title="Limpar tudo"
+                              aria-label="Limpar todos os comandos"
+                            >
+                              <AiOutlineDelete size={16} aria-hidden="true" />
+                            </button>
+                          </div>
+                        }
                       />
                   </div>
 
                   {state.functions.length > 0 && (
                     <div className="cmd-tabs" role="tablist" aria-label="Funções">
-                      {state.functions.map((funcData) => (
-                        <button
-                          type="button"
-                          role="tab"
-                          id={`cmd-tab-${funcData.id}`}
-                          aria-selected={openFunctionId === funcData.id}
-                          aria-controls={`cmd-panel-${funcData.id}`}
-                          key={funcData.id}
-                          className={`cmd-tab ${openFunctionId === funcData.id ? 'is-active' : ''} ${execCmdIdFor(funcData.id) ? 'is-executing-tab' : ''}`}
-                          onClick={() => { setOpenFunctionId(funcData.id); setActiveCmdTab(funcData.id); }}
-                          title={`Função ${funcData.name}`}
-                          style={{ '--function-accent': getFunctionTheme(funcData.id).color } as React.CSSProperties}
-                        >
-                          <span className="cmd-tab-label">{funcData.name}</span>
-                          <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
-                        </button>
-                      ))}
+                      {state.functions.map((funcData) => {
+                        const isActive = openFunctionId === funcData.id;
+                        const isCustom = !state.level.functionsConfig.some(c => c.id === funcData.id);
+                        const canDelete = isCustom && funcData.program.length === 0 && !state.running;
+                        const isFull = funcData.program.length >= funcData.maxCommands;
+                        const isRenaming = renamingFuncId === funcData.id;
+                        const fillPct = funcData.maxCommands > 0 ? Math.min(100, (funcData.program.length / funcData.maxCommands) * 100) : 0;
+                        const selectTab = () => { setOpenFunctionId(funcData.id); setActiveCmdTab(funcData.id); };
+
+                        return (
+                          <div
+                            key={funcData.id}
+                            role="tab"
+                            tabIndex={0}
+                            id={`cmd-tab-${funcData.id}`}
+                            aria-selected={isActive}
+                            aria-controls={`cmd-panel-${funcData.id}`}
+                            className={`cmd-tab ${isActive ? 'is-active' : ''} ${execCmdIdFor(funcData.id) ? 'is-executing-tab' : ''}`}
+                            onClick={selectTab}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTab(); } }}
+                            title={`Função ${funcData.name}`}
+                            style={{ '--function-accent': getFunctionTheme(funcData.id).color } as React.CSSProperties}
+                          >
+                            {isRenaming ? (
+                              <input
+                                type="text"
+                                autoFocus
+                                value={funcData.name}
+                                maxLength={12}
+                                className="cmd-tab-rename-input"
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => dispatch({ type: 'RENAME_FUNC', funcId: funcData.id, newName: e.target.value })}
+                                onBlur={() => setRenamingFuncId(null)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.currentTarget.blur(); } }}
+                              />
+                            ) : (
+                              <>
+                                <span className="cmd-tab-label">{funcData.name}</span>
+                                <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
+                                <span className="cmd-tab-track">
+                                  <span
+                                    className={`cmd-tab-fill ${isFull ? 'is-full' : ''} ${wobbleTarget === funcData.id ? 'is-wobbling' : ''}`}
+                                    style={{ width: `${fillPct}%` }}
+                                  />
+                                </span>
+                              </>
+                            )}
+
+                            {isActive && !state.running && !isRenaming && (
+                              <span className="cmd-tab-actions" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  className="cmd-tab-icon-btn"
+                                  title="Renomear função"
+                                  aria-label="Renomear função"
+                                  onClick={() => setRenamingFuncId(funcData.id)}
+                                >
+                                  <AiOutlineEdit size={12} aria-hidden="true" />
+                                </button>
+                                {canDelete && (
+                                  <button
+                                    type="button"
+                                    className="cmd-tab-icon-btn cmd-tab-icon-danger"
+                                    title="Remover função"
+                                    aria-label="Remover função"
+                                    onClick={() => handleRemoveFunction(funcData.id)}
+                                  >
+                                    <AiOutlineDelete size={12} aria-hidden="true" />
+                                  </button>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                       {canAddCustomFunction && (
                         <button
                           type="button"
-                          className="cmd-tab"
+                          className="cmd-tab cmd-tab-add"
                           onClick={handleAddFunction}
                           disabled={state.running}
                           title="Adicionar nova função"
@@ -663,23 +823,12 @@ export default function App() {
                           +
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => setConfirmClearOpen(true)}
-                        disabled={state.running || (state.program.length === 0 && state.functions.every(f => f.program.length === 0))}
-                        className="cmd-tab cmd-tab-danger"
-                        title="Limpar tudo"
-                        aria-label="Limpar todos os comandos"
-                      >
-                        <AiOutlineDelete size={16} aria-hidden="true" />
-                      </button>
                     </div>
                   )}
 
                   {(() => {
                     const funcData = state.functions.find(f => f.id === openFunctionId);
                     if (!funcData) return null;
-                    const isCustom = !state.level.functionsConfig.some(c => c.id === funcData.id);
 
                     return (
                       <div
@@ -694,11 +843,7 @@ export default function App() {
                           title={funcData.name}
                           count={funcData.program.length}
                           max={funcData.maxCommands}
-                          onTitleChange={(newName) => dispatch({
-                            type: 'RENAME_FUNC',
-                            funcId: funcData.id,
-                            newName: newName
-                          })}
+                          hideHeader
                           items={funcData.program}
                           isFull={funcData.program.length >= funcData.maxCommands}
                           onRemove={(cmdId) => {
@@ -714,11 +859,9 @@ export default function App() {
                           onOpenLoop={handleOpenLoop}
                           isSelected={activeCmdTab === funcData.id}
                           onSelect={() => setActiveCmdTab(funcData.id)}
-                          onDelete={isCustom && funcData.program.length === 0 ? () => handleRemoveFunction(funcData.id) : undefined}
                           accentColor={getFunctionTheme(funcData.id).color}
                           executingCmdId={execCmdIdFor(funcData.id)}
                           disabled={state.running}
-                          wobble={wobbleTarget === funcData.id}
                         />
                       </div>
                     );

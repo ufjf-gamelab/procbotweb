@@ -1,5 +1,5 @@
 import { useDroppable, useDndContext } from '@dnd-kit/core';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import { AiOutlineDelete, AiOutlineCode, AiOutlineInbox } from 'react-icons/ai';
 import {
@@ -21,6 +21,14 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
     isDragging,
   } = useSortable({ id: `prog-${item.id}`, disabled });
 
+  const localRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (isExecuting) {
+      localRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isExecuting]);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -31,7 +39,7 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={(node) => { setNodeRef(node); localRef.current = node; }} style={style}>
       <Command
         kind={item.kind}
         id={item.id}
@@ -49,7 +57,7 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
 }
 
 
-export function Program({ programId, title, count, max, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete, accentColor, executingCmdId, disabled, headerActions, wobble }:
+export function Program({ programId, title, count, max, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete, accentColor, executingCmdId, disabled, headerActions, cornerAction, wobble, hideHeader }:
   { programId: string; title: string; count: number; max: number;
     onTitleChange?: (newName: string) => void;
     isFull: boolean;
@@ -64,7 +72,9 @@ export function Program({ programId, title, count, max, onTitleChange, isFull, i
   executingCmdId?: string | null;
   disabled?: boolean;
   headerActions?: React.ReactNode;
+  cornerAction?: React.ReactNode;
   wobble?: boolean;
+  hideHeader?: boolean;
  }) {
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -90,10 +100,11 @@ export function Program({ programId, title, count, max, onTitleChange, isFull, i
 
   return (
     <section
-      className={clsx('panel', isSelected && 'is-target')}
+      className={clsx('panel', isSelected && 'is-target', cornerAction && 'has-corner-action')}
       style={panelStyle}
       data-tutorial={programId === 'main' ? 'program-main' : undefined}
     >
+      {!hideHeader && (
       <h3 onClick={onSelect} style={onSelect ? { cursor: 'pointer' } : undefined}>
         {onTitleChange && !disabled ? (
           <div className="editable-title-wrapper" onClick={() => inputRef.current?.focus()}>
@@ -147,6 +158,12 @@ export function Program({ programId, title, count, max, onTitleChange, isFull, i
           </button>
         )}
       </h3>
+      )}
+      {cornerAction && (
+        <span className="program-corner-action" onClick={(e) => e.stopPropagation()}>
+          {cornerAction}
+        </span>
+      )}
       <div
         ref={setNodeRef}
         className={dropClassName}

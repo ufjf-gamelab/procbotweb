@@ -61,6 +61,25 @@ h3 {
   z-index: 2;
 }
 
+.program-corner-action {
+  position: absolute;
+  top: -40px;
+  right: -2px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(18, 18, 24, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  padding: 4px 6px 0;
+  cursor: default;
+  z-index: 2;
+}
+
+.panel.has-corner-action h3 .limit-progress {
+  margin-right: 52px;
+}
+
 .btns.btns-compact {
   margin: 0;
   gap: 6px;
@@ -69,9 +88,14 @@ h3 {
 
 .btns.btns-compact button {
   padding: 6px;
-  min-width: 0;
+  min-width: 32px;
   border-bottom-width: 3px;
   border-radius: 8px;
+}
+
+.btns.btns-compact button.btn-run {
+  flex: 0 0 auto;
+  min-width: 64px;
 }
 
 .btns.btns-compact button:active:not(:disabled) {
@@ -323,22 +347,27 @@ html,
   display: flex;
   flex-wrap: wrap;
   flex: none;
-  gap: 6px;
+  gap: 4px;
+  margin-bottom: -2px;
 }
 
 .cmd-tab {
   position: relative;
   flex: 1;
-  min-width: 52px;
+  min-width: 64px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 2px;
-  padding: 6px 8px;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
   font-size: 11px;
   font-weight: 800;
-  border-radius: 8px;
+  border-radius: 8px 8px 0 0;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-bottom-color: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
 }
 
 .cmd-tab:hover,
@@ -353,14 +382,77 @@ html,
   white-space: nowrap;
 }
 
+.cmd-tab-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.cmd-tab-fill {
+  display: block;
+  height: 100%;
+  background: var(--function-accent, #60a5fa);
+  transition: width 0.25s ease;
+}
+
+.cmd-tab-fill.is-full {
+  background: #f87171;
+}
+
+.cmd-tab-fill.is-wobbling {
+  animation: limit-progress-wobble 0.45s ease;
+}
+
 .cmd-tab-count {
   font-weight: 700;
   opacity: .7;
 }
 
+.cmd-tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+.cmd-tab-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border-radius: 5px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cmd-tab-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.cmd-tab-icon-danger {
+  color: #f87171;
+}
+
+.cmd-tab-rename-input {
+  width: 64px;
+  max-width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 4px;
+}
+
 .cmd-tab.is-active {
   color: #fff;
   border-color: var(--function-accent, #60a5fa);
+  border-bottom-color: transparent;
   background: color-mix(in srgb, var(--function-accent, #60a5fa) 15%, transparent);
 }
 
@@ -407,9 +499,11 @@ html,
 }
 
 .block.is-executing {
+  background: var(--block-color, #34d399);
+  color: #fff;
   transform: scale(1.08);
-  box-shadow: inset 0 0 14px var(--block-glow, rgba(52, 211, 153, 0.3)), 0 0 18px 4px var(--block-color, #34d399);
-  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.55), 0 0 18px 4px var(--block-color, #34d399);
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, background 0.15s ease-out, color 0.15s ease-out;
   z-index: 2;
 }
 
@@ -427,20 +521,61 @@ html,
   width: 100%;
   height: 70px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   padding: 0 40px;
 }
 
 .header-center {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   gap: 20px;
   z-index: 1;
+}
+
+.settings-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.settings-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+  background: rgba(18, 18, 24, 0.97);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 8px;
+  z-index: 20;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.settings-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: #f2f2f7;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  justify-content: flex-start;
+}
+
+.settings-popover-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: none;
 }
 
 .status-badge {
@@ -545,18 +680,6 @@ html,
   background: rgba(6, 182, 212, 0.22);
   border: 1.5px solid rgba(6, 182, 212, 0.6);
   box-shadow: inset 0 0 14px rgba(6, 182, 212, 0.2);
-}
-
-.cell.robot-here::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 6px;
-  transform: translateX(-50%);
-  width: 55%;
-  height: 14%;
-  background: radial-gradient(closest-side, rgba(0,0,0,0.45), transparent);
-  z-index: 5;
 }
 
 .cell.lamp-lit {
@@ -1085,35 +1208,25 @@ gap: 26px;
   --btn-glow: rgba(251, 146, 60, 0.35);
 }
 
-.cmd-tab.cmd-tab-danger {
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.4);
+.btns button.btn-step {
+  --btn-color: #60a5fa;
+  --btn-dark: #1e40af;
+  --btn-glow: rgba(96, 165, 250, 0.35);
 }
 
-.cmd-tab.cmd-tab-danger:hover:not(:disabled) {
-  color: #fca5a5;
-  border-color: rgba(248, 113, 113, 0.6);
-  background: rgba(248, 113, 113, 0.15);
+.btns button.btn-clear {
+  --btn-color: #f87171;
+  --btn-dark: #7f1d1d;
+  --btn-glow: rgba(248, 113, 113, 0.4);
 }
 
-.header-clear-btn {
-  display: none;
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.4);
+.cmd-tab.cmd-tab-add {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
-.header-clear-btn:hover:not(:disabled) {
-  color: #fca5a5;
-  background: rgba(248, 113, 113, 0.15);
-}
-
-@media (min-width: 981px) {
-  .header-clear-btn {
-    display: flex;
-    padding: 8px 12px;
-    margin-left: auto;
-  }
-}
 
 .editable-title {
   background: transparent;
@@ -1645,21 +1758,25 @@ gap: 26px;
     display: flex;
     flex: none;
     min-width: 0;
-    gap: 6px;
+    gap: 4px;
     overflow-x: auto;
+    margin-bottom: -2px;
   }
 
   .cmd-tab {
     flex: 1;
-    min-width: 52px;
+    min-width: 60px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 2px;
+    justify-content: center;
+    gap: 4px;
     padding: 6px 8px;
     font-size: 11px;
     font-weight: 800;
-    border-radius: 8px;
+    border-radius: 8px 8px 0 0;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-bottom-color: rgba(255, 255, 255, 0.12);
     color: rgba(255, 255, 255, 0.7);
   }
 
@@ -1678,6 +1795,7 @@ gap: 26px;
   .cmd-tab.is-active {
     color: #fff;
     border-color: var(--function-accent, #60a5fa);
+    border-bottom-color: transparent;
     background: color-mix(in srgb, var(--function-accent, #60a5fa) 15%, transparent);
   }
 
@@ -1817,7 +1935,7 @@ gap: 26px;
 
   .game-header {
     height: 48px;
-    padding: 0 10px;
+    padding: 0 12px;
   }
 
   .header-center {
@@ -1919,7 +2037,8 @@ gap: 26px;
     padding-top: 22px;
   }
 
-  .sidebar .right .program-header-actions {
+  .sidebar .right .program-header-actions,
+  .sidebar .right .program-corner-action {
     top: -18px;
   }
 
@@ -1958,21 +2077,25 @@ gap: 26px;
     display: flex;
     flex: none;
     min-width: 0;
-    gap: 6px;
+    gap: 4px;
     overflow-x: auto;
+    margin-bottom: -2px;
   }
 
   .cmd-tab {
     flex: 1;
-    min-width: 56px;
+    min-width: 64px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 2px;
-    padding: 8px;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 8px;
     font-size: 12px;
     font-weight: 800;
-    border-radius: 8px;
+    border-radius: 8px 8px 0 0;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-bottom-color: rgba(255, 255, 255, 0.12);
     color: rgba(255, 255, 255, 0.7);
   }
 
@@ -1988,9 +2111,24 @@ gap: 26px;
     white-space: nowrap;
   }
 
+  .cmd-tab-progress .limit-progress-track {
+    display: none;
+  }
+
+  .cmd-tab-progress .limit-progress-label {
+    font-size: 10px;
+    opacity: 0.7;
+  }
+
+  .cmd-tab-progress.is-full .limit-progress-label {
+    color: #f87171;
+    opacity: 1;
+  }
+
   .cmd-tab.is-active {
     color: #fff;
     border-color: var(--function-accent, #60a5fa);
+    border-bottom-color: transparent;
     background: color-mix(in srgb, var(--function-accent, #60a5fa) 15%, transparent);
   }
 
