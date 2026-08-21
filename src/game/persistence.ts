@@ -3,6 +3,9 @@ import { allLevels } from './levels';
 
 const STORAGE_KEY = 'procbotweb:session:v1';
 const TUTORIAL_KEY = 'procbotweb:tutorial-seen:v1';
+const SPEED_KEY = 'procbotweb:speed:v1';
+
+export type Speed = 'slow' | 'normal' | 'fast';
 
 export type PersistedSession = {
   completedLevels: string[];
@@ -48,6 +51,24 @@ export function markTutorialSeen() {
     localStorage.setItem(TUTORIAL_KEY, '1');
   } catch {
     // localStorage indisponível — tutorial simplesmente reaparece na próxima visita
+  }
+}
+
+export function getSpeed(): Speed {
+  try {
+    const raw = localStorage.getItem(SPEED_KEY);
+    if (raw === 'slow' || raw === 'normal' || raw === 'fast') return raw;
+    return 'slow';
+  } catch {
+    return 'slow';
+  }
+}
+
+export function setSpeed(value: Speed) {
+  try {
+    localStorage.setItem(SPEED_KEY, value);
+  } catch {
+    // localStorage indisponível — velocidade simplesmente não persiste
   }
 }
 
