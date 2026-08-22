@@ -29,7 +29,7 @@ import { LoopEditor } from './components/LoopEditor';
 import type { Cmd, CmdKind, Level } from './game/types';
 import { getFunctionTheme } from './game/constants';
 import { useGameAudio } from './game/useGameAudio';
-import { isMuted, setMuted, playClick } from './game/audio';
+import { isMuted, setMuted, playClick, playBump } from './game/audio';
 import { hasSeenTutorial, markTutorialSeen, getSpeed, setSpeed } from './game/persistence';
 import type { Speed } from './game/persistence';
 import {
@@ -43,6 +43,7 @@ import {
   AiOutlineEdit,
   AiOutlineSetting
 } from "react-icons/ai";
+import { TbBraces } from "react-icons/tb";
 import { GiTurtle, GiRabbit, GiSprint } from "react-icons/gi";
 import { SettingsModal } from './components/SettingsModal';
 import './styles.css';
@@ -373,6 +374,7 @@ export default function App() {
   }
 
   function triggerWobble(containerId: string) {
+    playBump();
     setWobbleTarget(containerId);
     window.setTimeout(() => {
       setWobbleTarget(current => (current === containerId ? null : current));
@@ -740,7 +742,7 @@ export default function App() {
                             <button
                               onClick={() => setConfirmClearOpen(true)}
                               disabled={state.running || (state.program.length === 0 && state.functions.every(f => f.program.length === 0))}
-                              className="btn-action btn-clear"
+                              className={`btn-action btn-clear ${(state.program.length > 0 || state.functions.some(f => f.program.length > 0)) ? 'is-armed' : ''}`}
                               title="Limpar tudo"
                               aria-label="Limpar todos os comandos"
                             >
@@ -755,6 +757,7 @@ export default function App() {
                     <div className="cmd-tabs" role="tablist" aria-label="Funções">
                       {state.functions.map((funcData) => {
                         const isActive = openFunctionId === funcData.id;
+                        const isSelectedTab = activeCmdTab === funcData.id;
                         const isCustom = !state.level.functionsConfig.some(c => c.id === funcData.id);
                         const canDelete = isCustom && funcData.program.length === 0 && !state.running;
                         const isFull = funcData.program.length >= funcData.maxCommands;
@@ -770,7 +773,7 @@ export default function App() {
                             id={`cmd-tab-${funcData.id}`}
                             aria-selected={isActive}
                             aria-controls={`cmd-panel-${funcData.id}`}
-                            className={`cmd-tab ${isActive ? 'is-active' : ''} ${execCmdIdFor(funcData.id) ? 'is-executing-tab' : ''}`}
+                            className={`cmd-tab ${isActive ? 'is-active' : ''} ${isSelectedTab ? 'is-selected' : ''} ${execCmdIdFor(funcData.id) ? 'is-executing-tab' : ''}`}
                             onClick={selectTab}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTab(); } }}
                             title={`Função ${funcData.name}`}
@@ -790,6 +793,7 @@ export default function App() {
                               />
                             ) : (
                               <>
+                                {isActive && <TbBraces className="cmd-tab-icon" size={14} aria-hidden="true" />}
                                 <span className="cmd-tab-label">{funcData.name}</span>
                                 <span className="cmd-tab-count">{funcData.program.length}/{funcData.maxCommands}</span>
                                 <span className="cmd-tab-track">
@@ -879,6 +883,7 @@ export default function App() {
                           accentColor={getFunctionTheme(funcData.id).color}
                           executingCmdId={execCmdIdFor(funcData.id)}
                           disabled={state.running}
+                          wobble={wobbleTarget === funcData.id}
                         />
                       </div>
                     );

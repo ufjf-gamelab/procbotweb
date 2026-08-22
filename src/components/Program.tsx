@@ -95,17 +95,18 @@ export function Program({ programId, title, count, max, onTitleChange, isFull, i
   if (disabled) dropClassName += " is-locked";
 
   const panelStyle = accentColor
-    ? ({ '--function-accent': accentColor, borderColor: accentColor } as React.CSSProperties)
+    ? ({ '--function-accent': accentColor } as React.CSSProperties)
     : undefined;
 
   return (
     <section
-      className={clsx('panel', isSelected && 'is-target', cornerAction && 'has-corner-action')}
-      style={panelStyle}
+      className={clsx('panel', isSelected && 'is-target', cornerAction && 'has-corner-action', wobble && 'is-wobbling')}
+      style={{ ...panelStyle, cursor: onSelect ? 'pointer' : undefined }}
+      onClick={onSelect}
       data-tutorial={programId === 'main' ? 'program-main' : undefined}
     >
       {!hideHeader && (
-      <h3 onClick={onSelect} style={onSelect ? { cursor: 'pointer' } : undefined}>
+      <h3>
         {onTitleChange && !disabled ? (
           <div className="editable-title-wrapper" onClick={() => inputRef.current?.focus()}>
             <svg className="edit-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">

@@ -30,10 +30,10 @@ h3 {
 .hint {
   grid-column: 1 / -1;
   margin: 8px;
-  color: #94a3b8;
+  color: #6b7280;
   display: flex;
   justify-content: center;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .board-wrap {
@@ -278,7 +278,14 @@ html,
   color: var(--function-accent);
 }
 
+.panel[style*="--function-accent"] {
+  border-width: 1px;
+  border-color: color-mix(in srgb, var(--function-accent) 25%, rgba(255, 255, 255, 0.1));
+}
+
 .panel[style*="--function-accent"].is-target {
+  border-width: 2px;
+  border-color: var(--function-accent);
   box-shadow: 0 0 0 2px var(--function-accent), 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
@@ -373,24 +380,25 @@ html,
   display: flex;
   flex-wrap: wrap;
   flex: none;
+  align-items: flex-end;
   gap: 2px;
   margin-bottom: -3px;
 }
 
 .cmd-tab {
   position: relative;
-  flex: 1;
-  min-width: 64px;
+  flex: 1 1 0;
+  min-width: 44px;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 7px 10px;
+  padding: 4px 10px;
   font-size: 11px;
   font-weight: 800;
   border-radius: 10px 10px 0 0;
-  border: 2px solid transparent;
+  border: 2px solid color-mix(in srgb, var(--function-accent, rgba(255, 255, 255, 0.1)) 25%, rgba(255, 255, 255, 0.1));
   background: rgba(255, 255, 255, 0.03);
   color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
@@ -408,6 +416,12 @@ html,
   white-space: nowrap;
 }
 
+.cmd-tab-icon {
+  flex-shrink: 0;
+  color: #fff;
+  margin-left: -5px;
+}
+
 .cmd-tab-track {
   position: absolute;
   left: 0;
@@ -421,11 +435,16 @@ html,
 .cmd-tab-fill {
   display: block;
   height: 100%;
-  background: var(--function-accent, #60a5fa);
-  transition: width 0.25s ease;
+  background: rgba(255, 255, 255, 0.25);
+  transition: width 0.25s ease, background-color 0.15s ease;
 }
 
-.cmd-tab-fill.is-full {
+.cmd-tab.is-active .cmd-tab-fill {
+  background: var(--function-accent, #60a5fa);
+}
+
+.cmd-tab-fill.is-full,
+.cmd-tab.is-active .cmd-tab-fill.is-full {
   background: #f87171;
 }
 
@@ -478,9 +497,15 @@ html,
 .cmd-tab.is-active {
   z-index: 4;
   color: #fff;
-  border-color: var(--function-accent, #60a5fa);
+  border-color: color-mix(in srgb, var(--function-accent, rgba(255, 255, 255, 0.55)) 25%, rgba(255, 255, 255, 0.1));
   border-bottom-color: transparent;
   background: color-mix(in srgb, var(--function-accent, #60a5fa) 14%, rgba(18, 18, 24, 0.95));
+  padding-block: 7px;
+  flex-grow: 1.6;
+}
+
+.cmd-tab.is-active.is-selected {
+  border-color: var(--function-accent, #60a5fa);
 }
 
 .cmd-tab.is-executing-tab::after {
@@ -523,6 +548,23 @@ html,
   transform: translateY(4px);
   border-bottom: 0px solid #312e81;
   margin-bottom: 4px;
+}
+
+.palette-item-wrapper .block {
+  border-color: color-mix(in srgb, var(--block-color, #34d399) 35%, #1f2937);
+  border-bottom-color: color-mix(in srgb, var(--block-dark, #064e3b) 45%, #1f2937);
+  box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.05);
+  color: color-mix(in srgb, var(--block-color, #34d399) 55%, #9ca3af);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+.palette-item-wrapper:hover .block,
+.palette-item-wrapper:active .block,
+.palette-item-wrapper .block.dragging {
+  border-color: var(--block-color, #059669);
+  border-bottom-color: var(--block-dark, #064e3b);
+  box-shadow: inset 0 0 10px var(--block-glow, rgba(52, 211, 153, 0.3));
+  color: var(--block-color, #34d399);
 }
 
 .block.is-executing {
@@ -1251,9 +1293,25 @@ gap: 26px;
 }
 
 .btns button.btn-clear {
+  --btn-color: rgba(255, 255, 255, 0.4);
+  --btn-dark: rgba(255, 255, 255, 0.15);
+  --btn-glow: transparent;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+  border-width: 1px;
+}
+
+.btns button.btn-clear.is-armed {
   --btn-color: #f87171;
-  --btn-dark: #7f1d1d;
-  --btn-glow: rgba(248, 113, 113, 0.4);
+  --btn-dark: #b91c1c;
+  --btn-glow: transparent;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+.btns button.btn-clear:hover:not(:disabled) {
+  filter: none;
+  transform: none;
 }
 
 .cmd-tab.cmd-tab-add {
@@ -1395,6 +1453,20 @@ gap: 26px;
   40% { transform: translateX(3px); }
   60% { transform: translateX(-3px); }
   80% { transform: translateX(2px); }
+}
+
+.panel.is-wobbling {
+  animation: panel-wobble 0.5s ease;
+}
+
+@keyframes panel-wobble {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-10px); border-color: #f87171; }
+  30% { transform: translateX(9px); }
+  45% { transform: translateX(-7px); border-color: #f87171; }
+  60% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); border-color: #f87171; }
+  90% { transform: translateX(1px); }
 }
 
 @keyframes mascot-float {
@@ -1888,15 +1960,6 @@ gap: 26px;
     padding: 0;
   }
 
-  .btn-clear {
-    opacity: 0.55;
-  }
-
-  .btn-clear:active,
-  .btn-clear:focus-visible {
-    opacity: 1;
-  }
-
   .action-tray {
     display: flex;
     order: 3;
@@ -1949,18 +2012,17 @@ gap: 26px;
   }
 
   .cmd-tab {
-    flex: 1;
-    min-width: 60px;
+    flex: 1 1 0;
+    min-width: 40px;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 6px 8px;
+    padding: 4px 8px;
     font-size: 11px;
     font-weight: 800;
     border-radius: 10px 10px 0 0;
-    border: 2px solid transparent;
     background: rgba(255, 255, 255, 0.03);
     color: rgba(255, 255, 255, 0.55);
   }
@@ -1980,7 +2042,6 @@ gap: 26px;
   .cmd-tab.is-active {
     z-index: 4;
     color: #fff;
-    border-color: var(--function-accent, #60a5fa);
     border-bottom-color: transparent;
     background: color-mix(in srgb, var(--function-accent, #60a5fa) 14%, rgba(18, 18, 24, 0.95));
   }
@@ -2275,18 +2336,17 @@ gap: 26px;
   }
 
   .cmd-tab {
-    flex: 1;
-    min-width: 64px;
+    flex: 1 1 0;
+    min-width: 44px;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 5px;
-    padding: 7px 8px;
+    padding: 4px 8px;
     font-size: 12px;
     font-weight: 800;
     border-radius: 10px 10px 0 0;
-    border: 2px solid transparent;
     background: rgba(255, 255, 255, 0.03);
     color: rgba(255, 255, 255, 0.55);
   }
@@ -2306,7 +2366,6 @@ gap: 26px;
   .cmd-tab.is-active {
     z-index: 4;
     color: #fff;
-    border-color: var(--function-accent, #60a5fa);
     border-bottom-color: transparent;
     background: color-mix(in srgb, var(--function-accent, #60a5fa) 14%, rgba(18, 18, 24, 0.95));
   }
