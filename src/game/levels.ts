@@ -97,7 +97,7 @@ export const level8: Level = {
     { id: 'f1', name: 'F1', maxCommands: 6 },
     { id: 'f2', name: 'F2', maxCommands: 4 }
   ],
-  maxExtraFunctions: 1,
+  maxExtraFunctions: 3,
   loopsConfig: { maxLoops: 1, maxCommands: 4, minTimes: 2, maxTimes: 6 },
   optimalCommands: 10,
 };
