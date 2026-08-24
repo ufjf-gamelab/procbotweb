@@ -204,6 +204,7 @@ export default function App() {
 
   function handleDragStart(e: DragStartEvent) {
     if (state.running) return;
+    setExpandedLoopId(null);
     setActiveId(String(e.active.id));
   }
 
@@ -882,6 +883,11 @@ export default function App() {
                   loopTimes={
                     activeCommand.kind.startsWith('LOOP_')
                       ? state.loops.find(l => l.id.toLowerCase() === activeCommand.kind.replace('LOOP_', '').toLowerCase())?.times
+                      : undefined
+                  }
+                  loopCmd={
+                    activeCommand.kind.startsWith('LOOP_')
+                      ? state.loops.find(l => l.id.toLowerCase() === activeCommand.kind.replace('LOOP_', '').toLowerCase())?.cmd
                       : undefined
                   }
                 />
