@@ -189,7 +189,13 @@ export function Board({
   }
 
   return (
-    <section className="board-wrap" aria-label="Tabuleiro do robô" role="img" data-tutorial="board">
+    <section
+      className="board-wrap"
+      aria-label="Tabuleiro do robô"
+      role="img"
+      data-tutorial="board"
+      style={{ '--board-min-size': `${Math.max(level.width, level.height) * 40}px` } as React.CSSProperties}
+    >
       <div
         className="board-grid"
         style={{
