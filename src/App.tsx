@@ -81,8 +81,6 @@ export default function App() {
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [renamingFuncId, setRenamingFuncId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const boardAreaRef = useRef<HTMLDivElement>(null);
-  const [navCenterX, setNavCenterX] = useState<number | null>(null);
   const [wobbleTarget, setWobbleTarget] = useState<string | null>(null);
   const [tutorialSeen, setTutorialSeen] = useState(() => hasSeenTutorial());
   const stateRef = useRef(state);
@@ -107,41 +105,6 @@ export default function App() {
       stepIndex: state.stepIndex,
     });
   }, [completedLevels, levelStars, view, state]);
-
-  useEffect(() => {
-    if (view !== 'GAME') return;
-    // .center usa display:contents no breakpoint mobile portrait (sem caixa própria,
-    // getBoundingClientRect some) — mede o board-wrap real dentro dele, que sempre tem caixa.
-    const el = boardAreaRef.current?.querySelector('[data-tutorial="board"]') ?? boardAreaRef.current;
-    if (!el) return;
-
-    // No breakpoint landscape mobile o header vira nav lateral fixa (CSS puro,
-    // sem centralização via JS) — não precisa/deve medir o centro do tabuleiro.
-    const landscapeMobile = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
-
-    function measure() {
-      if (window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches) {
-        setNavCenterX(null);
-        return;
-      }
-      const rect = el!.getBoundingClientRect();
-      if (rect.width === 0) return;
-      setNavCenterX(rect.left + rect.width / 2);
-    }
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    window.addEventListener('resize', measure);
-    window.addEventListener('orientationchange', measure);
-    landscapeMobile.addEventListener('change', measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', measure);
-      window.removeEventListener('orientationchange', measure);
-      landscapeMobile.removeEventListener('change', measure);
-    };
-  }, [view, openLoopId]);
 
   useEffect(() => {
     if (state.win) {
@@ -500,6 +463,30 @@ export default function App() {
 
   const showTutorial = view === 'GAME' && state.level.id === '1' && !tutorialSeen;
 
+  useEffect(() => {
+    if (view !== 'GAME') return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.repeat) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (confirmClearOpen || settingsOpen || mascotTipOpen || showWinModal || showTutorial || renamingFuncId) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleRun();
+      } else if (e.key === 'r' || e.key === 'R') {
+        playClick();
+        dispatch({ type: 'resetLevel' });
+      } else if (e.key === 'ArrowRight') {
+        handleStep();
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [view, confirmClearOpen, settingsOpen, mascotTipOpen, showWinModal, showTutorial, renamingFuncId, state.program.length, state.running, autoPlaying]);
+
   function renderRunControls() {
     return (
       <div className="btns btns-compact">
@@ -629,10 +616,7 @@ export default function App() {
       </div>
 
         <header className="game-header">
-        <div
-          className="header-center"
-          style={navCenterX != null ? { position: 'absolute', top: 0, height: '100%', left: navCenterX, transform: 'translateX(-50%)' } : undefined}
-        >
+        <div className="header-center">
           <div className="nav-group">
             <button
               className="home-btn nav-home-btn"
@@ -686,7 +670,7 @@ export default function App() {
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}>
         <main className="layout">
-          <div className="center" ref={boardAreaRef}>
+          <div className="center">
             <Board level={state.level} robot={state.robot} lit={state.lit} bump={state.bump} running={state.running} />
           </div>
 
