@@ -9,6 +9,8 @@ import {
 
 export type CmdTheme = { icon: React.ReactNode; label: string; color: string; dark: string; glow: string };
 
+export const BASE_COMMANDS: CmdKind[] = ['ANDAR', 'ESQUERDA', 'DIREITA', 'ACENDER'];
+
 export const CMD_CONFIG: Record<CmdKind, CmdTheme> = {
 ANDAR: {
     icon: <AiOutlineArrowUp size={20} />,
@@ -82,7 +84,7 @@ export const LOOP_THEME: CmdTheme = {
 
 export function getCommandLabel(
   kind: CmdKind | string,
-  opts?: { functionName?: string; loopTimes?: number }
+  opts?: { functionName?: string; loopTimes?: number; loopCmd?: CmdKind }
 ): string {
   const kindStr = String(kind);
 
@@ -93,7 +95,9 @@ export function getCommandLabel(
   if (kindStr === 'REPEAT_NEW') return 'Adicionar repetição';
 
   if (kindStr.startsWith('LOOP_')) {
-    return opts?.loopTimes ? `Repetir ${opts.loopTimes} vezes` : 'Repetir';
+    const cmdLabel = opts?.loopCmd ? CMD_CONFIG[opts.loopCmd]?.label : undefined;
+    const base = cmdLabel ? `Repetir ${cmdLabel}` : 'Repetir';
+    return opts?.loopTimes ? `${base} ×${opts.loopTimes}` : base;
   }
 
   return CMD_CONFIG[kindStr as CmdKind]?.label ?? kindStr;

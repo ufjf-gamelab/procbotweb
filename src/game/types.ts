@@ -21,7 +21,7 @@ export type FunctionDef = {
   program: Cmd[];
 };
 
-export type LoopDef = { id: string; times: number; program: Cmd[]; maxCommands: number };
+export type LoopDef = { id: string; times: number; cmd: CmdKind };
 
 export type GameState = {
   level: Level;
@@ -67,8 +67,6 @@ export type Action =
   | { type: 'ADD_FUNCTION'; id: string; name: string; maxCommands: number }
   | { type: 'REMOVE_FUNCTION'; funcId: string }
   | { type: 'ADD_LOOP'; container: string }
-  | { type: 'ADD_TO_LOOP'; loopId: string; kind: CmdKind }
-  | { type: 'REMOVE_FROM_LOOP'; loopId: string; id: string }
-  | { type: 'SET_PROGRAM_LOOP'; loopId: string; program: Cmd[] }
+  | { type: 'SET_LOOP_CMD'; loopId: string; kind: CmdKind }
   | { type: 'SET_LOOP_TIMES'; loopId: string; times: number }
 ;

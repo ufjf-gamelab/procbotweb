@@ -8,10 +8,10 @@ import {
   rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Cmd } from '../game/types';
+import type { Cmd, CmdKind } from '../game/types';
 import { Command } from './Command';
 
-function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLoop, isExecuting, disabled }: { item: Cmd; onRemove: (id: string) => void; functionName?: string; loopTimes?: number; onOpenLoop?: () => void; isExecuting?: boolean; disabled?: boolean }) {
+function SortableCommandItem({ item, onRemove, functionName, loopTimes, loopCmd, isLoopExpanded, onToggleLoopExpand, onLoopDelta, onLoopCycleCmd, loopMin, loopMax, isExecuting, disabled }: { item: Cmd; onRemove: (id: string) => void; functionName?: string; loopTimes?: number; loopCmd?: CmdKind; isLoopExpanded?: boolean; onToggleLoopExpand?: () => void; onLoopDelta?: (delta: 1 | -1) => void; onLoopCycleCmd?: () => void; loopMin?: number; loopMax?: number; isExecuting?: boolean; disabled?: boolean }) {
   const {
     attributes,
     listeners,
@@ -36,6 +36,7 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
     position: 'relative' as const,
     zIndex: isDragging ? 1 : 0,
     touchAction: 'manipulation' as const,
+    gridColumn: isLoopExpanded ? 'span 4' : undefined,
   };
 
   return (
@@ -44,11 +45,17 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
         kind={item.kind}
         id={item.id}
         onRemove={disabled ? undefined : onRemove}
-        onOpen={disabled ? undefined : onOpenLoop}
+        isLoopExpanded={isLoopExpanded}
+        onToggleLoopExpand={disabled ? undefined : onToggleLoopExpand}
+        onLoopDelta={disabled ? undefined : onLoopDelta}
+        onLoopCycleCmd={disabled ? undefined : onLoopCycleCmd}
+        loopMin={loopMin}
+        loopMax={loopMax}
         attributes={attributes}
         listeners={listeners}
         functionName={functionName}
         loopTimes={loopTimes}
+        loopCmd={loopCmd}
         isDragging={isDragging}
         isExecuting={isExecuting}
       />
@@ -57,14 +64,18 @@ function SortableCommandItem({ item, onRemove, functionName, loopTimes, onOpenLo
 }
 
 
-export function Program({ programId, title, count, max, onTitleChange, isFull, items, onRemove, functions, loops, onOpenLoop, isSelected, onSelect, onDelete, accentColor, executingCmdId, disabled, headerActions, cornerAction, wobble, hideHeader }:
+export function Program({ programId, title, count, max, onTitleChange, isFull, items, onRemove, functions, loops, loopsConfig, expandedLoopId, onToggleLoopExpand, onLoopDelta, onLoopCycleCmd, isSelected, onSelect, onDelete, accentColor, executingCmdId, disabled, headerActions, cornerAction, wobble, hideHeader }:
   { programId: string; title: string; count: number; max: number;
     onTitleChange?: (newName: string) => void;
     isFull: boolean;
     items: Cmd[], onRemove: (id: string)=>void;
   functions?: { id: string; name: string; program: Cmd[] }[];
-  loops?: { id: string; times: number; program: Cmd[] }[];
-  onOpenLoop?: (loopId: string) => void;
+  loops?: { id: string; times: number; cmd: CmdKind }[];
+  loopsConfig?: { minTimes: number; maxTimes: number };
+  expandedLoopId?: string | null;
+  onToggleLoopExpand?: (loopId: string) => void;
+  onLoopDelta?: (loopId: string, delta: 1 | -1) => void;
+  onLoopCycleCmd?: (loopId: string) => void;
   isSelected?: boolean;
   onSelect?: () => void;
   onDelete?: () => void;
@@ -178,7 +189,7 @@ export function Program({ programId, title, count, max, onTitleChange, isFull, i
             const isFunction = String(cmd.kind).startsWith('CALL_');
             const isLoop = String(cmd.kind).startsWith('LOOP_');
             let funcData;
-            let loopData: { id: string; times: number } | undefined;
+            let loopData: { id: string; times: number; cmd: CmdKind } | undefined;
 
             if (isFunction) {
               const funcId = String(cmd.kind).replace('CALL_', '');
@@ -190,6 +201,8 @@ export function Program({ programId, title, count, max, onTitleChange, isFull, i
               loopData = loops?.find(l => l.id.toLowerCase() === loopId.toLowerCase());
             }
 
+            const loopId = loopData?.id ?? String(cmd.kind).replace('LOOP_', '');
+
             return (
               <SortableCommandItem
                 key={cmd.id}
@@ -197,7 +210,13 @@ export function Program({ programId, title, count, max, onTitleChange, isFull, i
                 onRemove={() => onRemove(cmd.id)}
                 functionName={funcData?.name}
                 loopTimes={loopData?.times}
-                onOpenLoop={isLoop ? () => onOpenLoop?.(loopData?.id ?? String(cmd.kind).replace('LOOP_', '')) : undefined}
+                loopCmd={loopData?.cmd}
+                isLoopExpanded={isLoop && expandedLoopId === loopId}
+                onToggleLoopExpand={isLoop ? () => onToggleLoopExpand?.(loopId) : undefined}
+                onLoopDelta={isLoop ? (delta) => onLoopDelta?.(loopId, delta) : undefined}
+                onLoopCycleCmd={isLoop ? () => onLoopCycleCmd?.(loopId) : undefined}
+                loopMin={loopsConfig?.minTimes}
+                loopMax={loopsConfig?.maxTimes}
                 isExecuting={cmd.id === executingCmdId}
                 disabled={disabled}
               />

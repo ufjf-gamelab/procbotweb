@@ -318,47 +318,88 @@ html,
   font-weight: 800;
 }
 
-.loop-editor-header {
+.loop-icon-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
 }
 
-.loop-back-btn {
-  padding: 8px 12px;
-  gap: 6px;
+.loop-repeat-icon {
+  color: var(--loop-accent, #f472b6);
+  flex-shrink: 0;
 }
 
-.loop-times-stepper {
+.block.is-loop-expanded {
+  cursor: default;
+  padding: 4px 6px;
+}
+
+.loop-expanded-icon {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  color: #f472b6;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
-.loop-times-stepper button {
-  padding: 6px;
+.loop-cmd-cycle-btn {
+  flex: 0 0 auto;
+  padding: 0;
+  min-height: 0;
+  width: 26px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px dashed var(--loop-accent, #f472b6);
+  box-shadow: none;
+  color: var(--block-color, #fff);
+  border-radius: 8px;
 }
 
-.loop-times-stepper strong {
-  min-width: 20px;
-  text-align: center;
-  font-size: 16px;
+.loop-badge-btn {
+  flex: 0 0 auto;
+  padding: 0;
+  min-height: 0;
+  width: 26px;
+  height: 26px;
+  background: rgba(244, 114, 182, 0.15);
+  border: 1px solid rgba(244, 114, 182, 0.45);
+  box-shadow: none;
+  color: #fff;
+  border-radius: 8px;
 }
 
-.loop-delete-btn {
-  padding: 8px 12px;
-  gap: 6px;
+.loop-badge-btn:hover {
+  background: rgba(244, 114, 182, 0.28);
+}
+
+.loop-step-btn {
+  flex: 0 0 auto;
+  padding: 0;
+  min-height: 0;
+  width: 26px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+  color: #fff;
+  border-radius: 7px;
+}
+
+.loop-step-btn:disabled {
+  opacity: 0.35;
+}
+
+.loop-step-delete {
   color: #f87171;
-  border-color: rgba(248, 113, 113, 0.4);
+  border-color: rgba(248, 113, 113, 0.35);
 }
 
-.loop-delete-btn:hover {
-  background: rgba(248, 113, 113, 0.15);
+.loop-step-delete:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.18);
 }
 
 .palette-grid {
@@ -2255,9 +2296,13 @@ gap: 26px;
     display: flex;
     flex: none;
     min-width: 0;
-    gap: 2px;
+    gap: 0px;
     flex-wrap: nowrap;
     margin-bottom: 0;
+  }
+
+  .cmd-tab.is-active {
+    top: 8px;
   }
 
   .cmd-tab {
@@ -2289,11 +2334,10 @@ gap: 26px;
   }
 
   .cmd-tab.is-active {
-    top: 10px;
     z-index: 4;
     color: #fff;
     border-bottom-color: transparent;
-    background: color-mix(in srgb, var(--function-accent, #60a5fa) 14%, rgba(18, 18, 24, 0.95));
+    background: color-mix(in srgb, var(--function-accent, #60a5fa) 14%, rgb(18, 18, 24));
   }
 
   .cmd-tab-panel {
@@ -2647,13 +2691,9 @@ gap: 26px;
     display: flex;
     flex: none;
     min-width: 0;
-    gap: 0px;
+    gap: 2px;
     flex-wrap: nowrap;
     margin-bottom: 0;
-  }
-
-  .cmd-tab.is-active {
-    top: 8px;
   }
 
   .cmd-tab {
@@ -2685,10 +2725,11 @@ gap: 26px;
   }
 
   .cmd-tab.is-active {
+    top: 10px;
     z-index: 4;
     color: #fff;
     border-bottom-color: transparent;
-    background: color-mix(in srgb, var(--function-accent, #60a5fa) 14%, rgb(18, 18, 24));
+    background: color-mix(in srgb, var(--function-accent, #60a5fa) 14%, rgba(18, 18, 24, 0.95));
   }
 
   .cmd-tab-panel {

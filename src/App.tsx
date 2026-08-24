@@ -25,9 +25,8 @@ import { MascotModal } from './components/MascotModal';
 import { Tutorial } from './components/Tutorial';
 import type { TutorialStep } from './components/Tutorial';
 import robotTip from './assets/robot_tip.png';
-import { LoopEditor } from './components/LoopEditor';
 import type { Cmd, CmdKind, Level } from './game/types';
-import { getFunctionTheme } from './game/constants';
+import { getFunctionTheme, BASE_COMMANDS } from './game/constants';
 import { useGameAudio } from './game/useGameAudio';
 import { isMuted, setMuted, playClick, playBump } from './game/audio';
 import { hasSeenTutorial, markTutorialSeen, getSpeed, setSpeed } from './game/persistence';
@@ -77,7 +76,7 @@ export default function App() {
   const [mascotTipOpen, setMascotTipOpen] = useState(true);
   const [activeCmdTab, setActiveCmdTab] = useState<string>('main');
   const [openFunctionId, setOpenFunctionId] = useState<string | null>(null);
-  const [openLoopId, setOpenLoopId] = useState<string | null>(null);
+  const [expandedLoopId, setExpandedLoopId] = useState<string | null>(null);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [renamingFuncId, setRenamingFuncId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -136,20 +135,20 @@ export default function App() {
   }, [state.functions, openFunctionId]);
 
   useEffect(() => {
+    if (state.running) setExpandedLoopId(null);
+  }, [state.running]);
+
+  useEffect(() => {
     if (!state.running || !state.currentCmd) return;
     const { ownerId } = state.currentCmd;
 
     if (ownerId === 'main') {
-      setOpenLoopId(null);
       setActiveCmdTab('main');
     } else if (state.functions.some(f => f.id === ownerId)) {
-      setOpenLoopId(null);
       setActiveCmdTab(ownerId);
       setOpenFunctionId(ownerId);
-    } else if (state.loops.some(l => l.id === ownerId)) {
-      setOpenLoopId(ownerId);
     }
-  }, [state.currentCmd, state.running, state.functions, state.loops]);
+  }, [state.currentCmd, state.running, state.functions]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
@@ -243,12 +242,6 @@ export default function App() {
         }
       }
 
-      for (const loop of state.loops) {
-        if (loop.program.find(i => `prog-${i.id}` === id)) {
-          return loop.id;
-        }
-      }
-
       return null;
     }
 
@@ -256,8 +249,6 @@ export default function App() {
       if (containerId === 'main') return state.program;
       const func = state.functions.find(f => f.id === containerId);
       if (func) return func.program;
-      const loop = state.loops.find(l => l.id === containerId);
-      if (loop) return loop.program;
       return [];
     }
 
@@ -266,9 +257,13 @@ export default function App() {
         dispatch({ type: 'SET_PROGRAM_MAIN', program });
       } else if (state.functions.find(f => f.id === containerId)) {
         dispatch({ type: 'SET_PROGRAM_FUNC', funcId: containerId, program });
-      } else if (state.loops.find(l => l.id === containerId)) {
-        dispatch({ type: 'SET_PROGRAM_LOOP', loopId: containerId, program });
       }
+    }
+
+    function findLoopRefByProgId(id: string): string | null {
+      const allItems = [...state.program, ...state.functions.flatMap(f => f.program)];
+      const cmd = allItems.find(c => `prog-${c.id}` === id);
+      return cmd && cmd.kind.startsWith('LOOP_') ? cmd.kind.slice(5) : null;
     }
 
     const targetContainer = findContainer(overId);
@@ -283,6 +278,14 @@ export default function App() {
         return;
       }
 
+      if (BASE_COMMANDS.includes(kind)) {
+        const overLoopId = findLoopRefByProgId(overId);
+        if (overLoopId) {
+          dispatch({ type: 'SET_LOOP_CMD', loopId: overLoopId, kind });
+          return;
+        }
+      }
+
       if (!targetContainer) return;
 
       if (isContainerFull(targetContainer)) {
@@ -292,8 +295,6 @@ export default function App() {
 
       if (targetContainer === 'main') {
         dispatch({ type: 'ADD_TO_MAIN', kind });
-      } else if (state.loops.find(l => l.id === targetContainer)) {
-        dispatch({ type: 'ADD_TO_LOOP', loopId: targetContainer, kind });
       } else {
         dispatch({ type: 'ADD_TO_FUNC', funcId: targetContainer, kind });
       }
@@ -331,8 +332,6 @@ export default function App() {
     if (containerId === 'main') return state.program.length >= (state.level.maxMain ?? 99);
     const func = state.functions.find(f => f.id === containerId);
     if (func) return func.program.length >= func.maxCommands;
-    const loop = state.loops.find(l => l.id === containerId);
-    if (loop) return loop.program.length >= loop.maxCommands;
     return false;
   }
 
@@ -377,41 +376,30 @@ export default function App() {
     playClick();
   }
 
-  function handleAddToLoop(kind: CmdKind | string) {
-    if (!openLoopId || state.running) return;
-    if (isContainerFull(openLoopId)) {
-      triggerWobble(openLoopId);
-      return;
-    }
+  function handleToggleLoopExpand(loopId: string) {
+    if (state.running) return;
     playClick();
-    dispatch({ type: 'ADD_TO_LOOP', loopId: openLoopId, kind: kind as CmdKind });
+    setExpandedLoopId(current => (current === loopId ? null : loopId));
   }
 
-  function handleOpenLoop(loopId: string) {
+  function handleLoopDelta(loopId: string, delta: 1 | -1) {
     if (state.running) return;
-    setOpenLoopId(loopId);
+    const loop = state.loops.find(l => l.id === loopId);
+    if (!loop) return;
+
+    playClick();
+    dispatch({ type: 'SET_LOOP_TIMES', loopId, times: loop.times + delta });
   }
 
-  function handleCloseLoop() {
-    setOpenLoopId(null);
-  }
-
-  function handleDeleteLoop(loopId: string) {
+  function handleLoopCycleCmd(loopId: string) {
     if (state.running) return;
-    const loopKind = `LOOP_${loopId}`;
-    const mainCmd = state.program.find(c => c.kind === loopKind);
+    const loop = state.loops.find(l => l.id === loopId);
+    if (!loop) return;
 
-    if (mainCmd) {
-      dispatch({ type: 'REMOVE_FROM_MAIN', id: mainCmd.id });
-    } else {
-      const owner = state.functions.find(f => f.program.some(c => c.kind === loopKind));
-      const cmd = owner?.program.find(c => c.kind === loopKind);
-      if (owner && cmd) {
-        dispatch({ type: 'REMOVE_FROM_FUNC', funcId: owner.id, id: cmd.id });
-      }
-    }
-
-    setOpenLoopId(null);
+    playClick();
+    const currentIndex = BASE_COMMANDS.indexOf(loop.cmd);
+    const next = BASE_COMMANDS[(currentIndex + 1) % BASE_COMMANDS.length];
+    dispatch({ type: 'SET_LOOP_CMD', loopId, kind: next });
   }
 
   function handleAddFunction() {
@@ -531,8 +519,7 @@ export default function App() {
   const activeCommand: Cmd | undefined = activeId
     ? (
       state.program.find(cmd => `prog-${cmd.id}` === activeId) ||
-      state.functions.flatMap(f => f.program).find(cmd => `prog-${cmd.id}` === activeId) ||
-      state.loops.flatMap(l => l.program).find(cmd => `prog-${cmd.id}` === activeId)
+      state.functions.flatMap(f => f.program).find(cmd => `prog-${cmd.id}` === activeId)
     ) : undefined;
 
   const limitMain = state.level.maxMain ?? 99;
@@ -542,7 +529,6 @@ export default function App() {
     (state.functions.length - state.level.functionsConfig.length) < (state.level.maxExtraFunctions ?? 0);
   const loopsConfig = state.level.loopsConfig;
   const canAddLoop = !!loopsConfig && state.loops.length < loopsConfig.maxLoops;
-  const openLoop = openLoopId ? state.loops.find(l => l.id === openLoopId) : undefined;
 
   const activeChainByOwner = new Map<string, string>();
   if (state.running) {
@@ -674,35 +660,17 @@ export default function App() {
             <Board level={state.level} robot={state.robot} lit={state.lit} bump={state.bump} running={state.running} />
           </div>
 
-          {!openLoop && (
-            <div className="command-rail" data-tutorial="palette">
-              <Palette
-                onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
-                functions={state.functions}
-                showLoopTile={canAddLoop}
-                disabled={state.running}
-              />
-            </div>
-          )}
+          <div className="command-rail" data-tutorial="palette">
+            <Palette
+              onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
+              functions={state.functions}
+              showLoopTile={canAddLoop}
+              disabled={state.running}
+            />
+          </div>
 
           <div className="sidebar">
             <div className="right">
-              {openLoop ? (
-                <LoopEditor
-                  loop={openLoop}
-                  loopsConfig={loopsConfig!}
-                  functions={state.functions}
-                  onClose={handleCloseLoop}
-                  onAddCommand={handleAddToLoop}
-                  onRemoveCommand={(cmdId) => { playClick(); dispatch({ type: 'REMOVE_FROM_LOOP', loopId: openLoop.id, id: cmdId }); }}
-                  onSetTimes={(times) => dispatch({ type: 'SET_LOOP_TIMES', loopId: openLoop.id, times })}
-                  onDeleteLoop={() => handleDeleteLoop(openLoop.id)}
-                  executingCmdId={execCmdIdFor(openLoop.id)}
-                  disabled={state.running}
-                  wobble={wobbleTarget === openLoop.id}
-                />
-              ) : (
-                <>
                   <div id="cmd-panel-main" className="cmd-tab-panel is-active">
                     <Program
                         programId="main"
@@ -714,7 +682,11 @@ export default function App() {
                         onRemove={(id) => { playClick(); dispatch({ type: 'REMOVE_FROM_MAIN', id }); }}
                         functions={state.functions}
                         loops={state.loops}
-                        onOpenLoop={handleOpenLoop}
+                        loopsConfig={loopsConfig}
+                        expandedLoopId={expandedLoopId}
+                        onToggleLoopExpand={handleToggleLoopExpand}
+                        onLoopDelta={handleLoopDelta}
+                        onLoopCycleCmd={handleLoopCycleCmd}
                         isSelected={activeCmdTab === 'main'}
                         onSelect={() => setActiveCmdTab('main')}
                         executingCmdId={execCmdIdFor('main')}
@@ -861,7 +833,11 @@ export default function App() {
                           }}
                           functions={state.functions}
                           loops={state.loops}
-                          onOpenLoop={handleOpenLoop}
+                          loopsConfig={loopsConfig}
+                        expandedLoopId={expandedLoopId}
+                        onToggleLoopExpand={handleToggleLoopExpand}
+                        onLoopDelta={handleLoopDelta}
+                        onLoopCycleCmd={handleLoopCycleCmd}
                           isSelected={activeCmdTab === funcData.id}
                           onSelect={() => setActiveCmdTab(funcData.id)}
                           accentColor={getFunctionTheme(funcData.id).color}
@@ -883,15 +859,11 @@ export default function App() {
                     </button>
                   )}
                   <div className="spacer" />
-                </>
-              )}
             </div>
 
-            {!openLoop && (
-              <div className="action-tray">
-                {renderRunControls()}
-              </div>
-            )}
+            <div className="action-tray">
+              {renderRunControls()}
+            </div>
           </div>
         </main>
         <DragOverlay dropAnimation={null}>

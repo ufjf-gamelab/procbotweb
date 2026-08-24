@@ -3,10 +3,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
 import { AiOutlineTool } from 'react-icons/ai';
 import type { CmdKind } from '../game/types';
-// import { CMD_CONFIG } from '../game/constants';
+import { BASE_COMMANDS } from '../game/constants';
 import { Command } from './Command';
-
-const BASE_COMMANDS: CmdKind[] = ['ANDAR','ESQUERDA','DIREITA','ACENDER'];
 
 type PalItemProps = {
   kind: string;

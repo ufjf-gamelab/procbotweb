@@ -87,7 +87,7 @@ const EDIT_ACTION_TYPES = new Set<Action['type']>([
   'ADD_TO_MAIN', 'REMOVE_FROM_MAIN', 'SET_PROGRAM_MAIN',
   'ADD_TO_FUNC', 'REMOVE_FROM_FUNC', 'SET_PROGRAM_FUNC', 'RENAME_FUNC',
   'MOVE_COMMAND', 'ADD_FUNCTION', 'REMOVE_FUNCTION',
-  'ADD_LOOP', 'ADD_TO_LOOP', 'REMOVE_FROM_LOOP', 'SET_PROGRAM_LOOP', 'SET_LOOP_TIMES',
+  'ADD_LOOP', 'SET_LOOP_CMD', 'SET_LOOP_TIMES',
 ]);
 
 export function reducer(state: GameState, action: Action): GameState {
@@ -181,13 +181,14 @@ export function reducer(state: GameState, action: Action): GameState {
           l.id.toString().toLowerCase() === loopId.toLowerCase()
         );
 
-        if (!targetLoopState || targetLoopState.program.length === 0 || targetLoopState.times <= 0) {
+        if (!targetLoopState || targetLoopState.times <= 0) {
           currentContext.stepIndex += 1;
           stack[stack.length - 1] = currentContext;
           return { ...state, callStack: stack, currentCmd };
         }
 
-        stack.push({ program: targetLoopState.program, stepIndex: 0, remainingIterations: targetLoopState.times, ownerId: targetLoopState.id });
+        const loopProgram: Cmd[] = [{ id: crypto.randomUUID(), kind: targetLoopState.cmd }];
+        stack.push({ program: loopProgram, stepIndex: 0, remainingIterations: targetLoopState.times, ownerId: targetLoopState.id });
         return { ...state, callStack: stack, currentCmd };
       }
 
@@ -381,8 +382,7 @@ export function reducer(state: GameState, action: Action): GameState {
       const newLoop: LoopDef = {
         id: loopId,
         times: loopsConfig.minTimes,
-        program: [],
-        maxCommands: loopsConfig.maxCommands,
+        cmd: 'ANDAR',
       };
       const refCmd: Cmd = { id: crypto.randomUUID(), kind: `LOOP_${loopId}` as CmdKind };
       const withLoop: GameState = { ...state, loops: [...state.loops, newLoop] };
@@ -392,41 +392,12 @@ export function reducer(state: GameState, action: Action): GameState {
         : { ...withLoop, functions: withLoop.functions.map(f => f.id === action.container ? { ...f, program: [...f.program, refCmd] } : f) };
     }
 
-    case 'ADD_TO_LOOP': {
-      const loopIndex = state.loops.findIndex(l => l.id === action.loopId);
-      if (loopIndex === -1) return state;
-
-      const loopState = state.loops[loopIndex];
-      if (loopState.program.length >= loopState.maxCommands) return state;
-
-      const newLoops = [...state.loops];
-      newLoops[loopIndex] = {
-        ...loopState,
-        program: [...loopState.program, { id: crypto.randomUUID(), kind: action.kind }]
-      };
-
-      return { ...state, loops: newLoops };
-    }
-
-    case 'REMOVE_FROM_LOOP': {
+    case 'SET_LOOP_CMD': {
       const loopIndex = state.loops.findIndex(l => l.id === action.loopId);
       if (loopIndex === -1) return state;
 
       const newLoops = [...state.loops];
-      newLoops[loopIndex] = {
-        ...newLoops[loopIndex],
-        program: newLoops[loopIndex].program.filter(c => c.id !== action.id)
-      };
-
-      return { ...state, loops: newLoops };
-    }
-
-    case 'SET_PROGRAM_LOOP': {
-      const loopIndex = state.loops.findIndex(l => l.id === action.loopId);
-      if (loopIndex === -1) return state;
-
-      const newLoops = [...state.loops];
-      newLoops[loopIndex] = { ...newLoops[loopIndex], program: action.program };
+      newLoops[loopIndex] = { ...newLoops[loopIndex], cmd: action.kind };
 
       return { ...state, loops: newLoops };
     }
