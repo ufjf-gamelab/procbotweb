@@ -281,12 +281,14 @@ html,
 .panel[style*="--function-accent"] {
   border-width: 1px;
   border-color: color-mix(in srgb, var(--function-accent) 25%, rgba(255, 255, 255, 0.1));
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .panel[style*="--function-accent"].is-target {
   border-width: 2px;
   border-color: var(--function-accent);
-  box-shadow: 0 0 0 2px var(--function-accent), 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .delete-function-btn {
@@ -401,6 +403,7 @@ html,
   border: 2px solid color-mix(in srgb, var(--function-accent, rgba(255, 255, 255, 0.1)) 25%, rgba(255, 255, 255, 0.1));
   background: rgba(255, 255, 255, 0.03);
   color: rgba(255, 255, 255, 0.55);
+  border-bottom-color: transparent;
   cursor: pointer;
 }
 
@@ -505,7 +508,9 @@ html,
 }
 
 .cmd-tab.is-active.is-selected {
-  border-color: var(--function-accent, #60a5fa);
+  border-top-color: var(--function-accent, #60a5fa);
+  border-left-color: var(--function-accent, #60a5fa);
+  border-right-color: var(--function-accent, #60a5fa);
 }
 
 .cmd-tab.is-executing-tab::after {
@@ -1281,15 +1286,15 @@ gap: 26px;
 }
 
 .btns button.btn-reset {
-  --btn-color: #fb923c;
-  --btn-dark: #9a3412;
-  --btn-glow: rgba(251, 146, 60, 0.35);
+  --btn-color: #f97316;
+  --btn-dark: #7c2d12;
+  --btn-glow: rgba(249, 115, 22, 0.35);
 }
 
 .btns button.btn-step {
-  --btn-color: #60a5fa;
+  --btn-color: #3b82f6;
   --btn-dark: #1e40af;
-  --btn-glow: rgba(96, 165, 250, 0.35);
+  --btn-glow: rgba(59, 130, 246, 0.35);
 }
 
 .btns button.btn-clear {

@@ -27,16 +27,16 @@ ESQUERDA: {
 DIREITA: {
     icon: <AiOutlineRotateRight size={20} />,
     label: 'Dir.',
-    color: '#fb923c',
-    dark: '#9a3412',
-    glow: 'rgba(251, 146, 60, 0.35)'
+    color: '#e879f9',
+    dark: '#86198f',
+    glow: 'rgba(232, 121, 249, 0.35)'
 },
 ACENDER: {
     icon: <AiOutlineBulb size={20} />,
     label: 'Luz',
-    color: '#34d399',
-    dark: '#065f46',
-    glow: 'rgba(52, 211, 153, 0.35)'
+    color: '#facc15',
+    dark: '#854d0e',
+    glow: 'rgba(250, 204, 21, 0.35)'
 }
 };
 
@@ -50,13 +50,13 @@ export const FUNCTION_THEME: CmdTheme = {
 
 const FUNCTION_PALETTE: { color: string; dark: string; glow: string }[] = [
   { color: '#a78bfa', dark: '#4c1d95', glow: 'rgba(167, 139, 250, 0.35)' },
-  { color: '#facc15', dark: '#854d0e', glow: 'rgba(250, 204, 21, 0.35)' },
-  { color: '#22d3ee', dark: '#0e7490', glow: 'rgba(34, 211, 238, 0.35)' },
-  { color: '#2dd4bf', dark: '#115e59', glow: 'rgba(45, 212, 191, 0.35)' },
-  { color: '#4ade80', dark: '#166534', glow: 'rgba(74, 222, 128, 0.35)' },
-  { color: '#f97316', dark: '#7c2d12', glow: 'rgba(249, 115, 22, 0.35)' },
+  { color: '#38bdf8', dark: '#075985', glow: 'rgba(56, 189, 248, 0.35)' },
+  { color: '#a3e635', dark: '#3f6212', glow: 'rgba(163, 230, 53, 0.35)' },
+  { color: '#a5f3fc', dark: '#155e75', glow: 'rgba(165, 243, 252, 0.35)' },
   { color: '#818cf8', dark: '#3730a3', glow: 'rgba(129, 140, 248, 0.35)' },
-  { color: '#e879f9', dark: '#86198f', glow: 'rgba(232, 121, 249, 0.35)' },
+  { color: '#c026d3', dark: '#701a75', glow: 'rgba(192, 38, 211, 0.35)' },
+  { color: '#4ade80', dark: '#166534', glow: 'rgba(74, 222, 128, 0.35)' },
+  { color: '#a16207', dark: '#422006', glow: 'rgba(161, 98, 7, 0.35)' },
 ];
 
 function hashString(str: string): number {
