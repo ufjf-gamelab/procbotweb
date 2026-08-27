@@ -1,14 +1,17 @@
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, useDndContext } from '@dnd-kit/core';
+import { useEffect, useRef } from 'react';
+import clsx from 'clsx';
+import { AiOutlineDelete, AiOutlineCode, AiOutlineInbox } from 'react-icons/ai';
 import {
   SortableContext,
   useSortable,
-  rectSortingStrategy,
+  rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Cmd } from '../game/types';
+import type { Cmd, CmdKind } from '../game/types';
 import { Command } from './Command';
 
-function SortableCommandItem({ item, onRemove }: { item: Cmd; onRemove: (id: string) => void }) {
+function SortableCommandItem({ item, onRemove, functionName, loopTimes, loopCmd, isLoopExpanded, onToggleLoopExpand, onLoopDelta, onLoopCycleCmd, loopMin, loopMax, isExecuting, disabled }: { item: Cmd; onRemove: (id: string) => void; functionName?: string; loopTimes?: number; loopCmd?: CmdKind; isLoopExpanded?: boolean; onToggleLoopExpand?: () => void; onLoopDelta?: (delta: 1 | -1) => void; onLoopCycleCmd?: () => void; loopMin?: number; loopMax?: number; isExecuting?: boolean; disabled?: boolean }) {
   const {
     attributes,
     listeners,
@@ -16,62 +19,215 @@ function SortableCommandItem({ item, onRemove }: { item: Cmd; onRemove: (id: str
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `prog-${item.id}` });
+  } = useSortable({ id: `prog-${item.id}`, disabled });
+
+  const localRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (isExecuting) {
+      localRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isExecuting]);
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 1 : 0,
+    touchAction: 'manipulation' as const,
+    gridColumn: isLoopExpanded ? 'span 4' : undefined,
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={(node) => { setNodeRef(node); localRef.current = node; }} style={style}>
       <Command
         kind={item.kind}
         id={item.id}
-        onRemove={onRemove}
+        onRemove={disabled ? undefined : onRemove}
+        isLoopExpanded={isLoopExpanded}
+        onToggleLoopExpand={disabled ? undefined : onToggleLoopExpand}
+        onLoopDelta={disabled ? undefined : onLoopDelta}
+        onLoopCycleCmd={disabled ? undefined : onLoopCycleCmd}
+        loopMin={loopMin}
+        loopMax={loopMax}
         attributes={attributes}
         listeners={listeners}
+        functionName={functionName}
+        loopTimes={loopTimes}
+        loopCmd={loopCmd}
+        isDragging={isDragging}
+        isExecuting={isExecuting}
       />
     </div>
   );
 }
 
 
-export function Program({ programId, title, items, onRemove, onRename }: 
-  { programId: string; title: string; items: Cmd[], onRemove: (id: string)=>void, onRename?: (newName: string) => void; }) {
-  const itemIds = items.map(item => `prog-${item.id}`);
-  
-  const { setNodeRef, isOver } = useDroppable({
+export function Program({ programId, title, count, max, onTitleChange, isFull, items, onRemove, functions, loops, loopsConfig, expandedLoopId, onToggleLoopExpand, onLoopDelta, onLoopCycleCmd, isSelected, onSelect, onDelete, accentColor, executingCmdId, disabled, headerActions, cornerAction, wobble, hideHeader }:
+  { programId: string; title: string; count: number; max: number;
+    onTitleChange?: (newName: string) => void;
+    isFull: boolean;
+    items: Cmd[], onRemove: (id: string)=>void;
+  functions?: { id: string; name: string; program: Cmd[] }[];
+  loops?: { id: string; times: number; cmd: CmdKind }[];
+  loopsConfig?: { minTimes: number; maxTimes: number };
+  expandedLoopId?: string | null;
+  onToggleLoopExpand?: (loopId: string) => void;
+  onLoopDelta?: (loopId: string, delta: 1 | -1) => void;
+  onLoopCycleCmd?: (loopId: string) => void;
+  isSelected?: boolean;
+  onSelect?: () => void;
+  onDelete?: () => void;
+  accentColor?: string;
+  executingCmdId?: string | null;
+  disabled?: boolean;
+  headerActions?: React.ReactNode;
+  cornerAction?: React.ReactNode;
+  wobble?: boolean;
+  hideHeader?: boolean;
+ }) {
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { setNodeRef } = useDroppable({
     id: `program-drop-${programId}`,
+    disabled,
   });
 
+  const { over } = useDndContext();
+  const isOverContainer =
+    over?.id === `program-drop-${programId}` ||
+    items.some(cmd => `prog-${cmd.id}` === over?.id);
+
+  let dropClassName = "program-list";
+  if (isOverContainer) {
+    dropClassName += isFull ? " is-full" : " is-valid";
+  }
+  if (disabled) dropClassName += " is-locked";
+
+  const panelStyle = accentColor
+    ? ({ '--function-accent': accentColor } as React.CSSProperties)
+    : undefined;
+
   return (
-    <section className="panel">
-      {onRename ? (
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => onRename(e.target.value)}
-          style={{ background: 'none', border: '1px solid #fff', color: '#fff', fontSize: '14px', marginBottom: '8px' }}
-        />
-      ) : (
-        <h3>{title}</h3>
+    <section
+      className={clsx('panel', isSelected && 'is-target', cornerAction && 'has-corner-action', wobble && 'is-wobbling')}
+      style={{ ...panelStyle, cursor: onSelect ? 'pointer' : undefined }}
+      onClick={onSelect}
+      data-tutorial={programId === 'main' ? 'program-main' : undefined}
+    >
+      {!hideHeader && (
+      <h3>
+        {onTitleChange && !disabled ? (
+          <div className="editable-title-wrapper" onClick={() => inputRef.current?.focus()}>
+            <svg className="edit-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <input
+              ref={inputRef}
+              type="text"
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              className="editable-title"
+              maxLength={12}
+            />
+          </div>
+        ) : onTitleChange ? (
+          <span className="editable-title-wrapper" title={title} aria-label={title}>
+            {title}
+          </span>
+        ) : (
+          <span title={title} aria-label={title}>
+            <AiOutlineCode size={18} aria-hidden="true" />
+          </span>
+        )}
+        
+        {headerActions && (
+          <span className="program-header-actions" onClick={(e) => e.stopPropagation()}>
+            {headerActions}
+          </span>
+        )}
+
+        <span className={`limit-progress ${isFull ? 'is-full' : ''} ${wobble ? 'is-wobbling' : ''}`} title={`${count}/${max} comandos`}>
+          <span className="limit-progress-track">
+            <span
+              className="limit-progress-fill"
+              style={{ width: `${max > 0 ? Math.min(100, (count / max) * 100) : 0}%` }}
+            />
+          </span>
+          <span className="limit-progress-label">{count}/{max}</span>
+        </span>
+
+        {onDelete && !disabled && (
+          <button
+            type="button"
+            className="delete-function-btn"
+            title="Remover função"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          >
+            <AiOutlineDelete size={14} />
+          </button>
+        )}
+      </h3>
+      )}
+      {cornerAction && (
+        <span className="program-corner-action" onClick={(e) => e.stopPropagation()}>
+          {cornerAction}
+        </span>
       )}
       <div
         ref={setNodeRef}
-        className="program-list"
+        className={dropClassName}
         style={{
-          outline: isOver ? '2px solid #5877ff' : '1px dashed rgba(255,255,255,.12)',
+          outline: isOverContainer ? '2px solid #5877ff' : '1px dashed rgba(255,255,255,.12)',
           outlineOffset: '2px',
         }}
       >
-        <SortableContext items={itemIds} strategy={rectSortingStrategy}>
-          {items.map(item => (
-            <SortableCommandItem key={item.id} item={item} onRemove={onRemove} />
-          ))}
+       <SortableContext items={items.map(i => `prog-${i.id}`)} strategy={rectSortingStrategy}>
+          {items.map((cmd) => {
+            const isFunction = String(cmd.kind).startsWith('CALL_');
+            const isLoop = String(cmd.kind).startsWith('LOOP_');
+            let funcData;
+            let loopData: { id: string; times: number; cmd: CmdKind } | undefined;
+
+            if (isFunction) {
+              const funcId = String(cmd.kind).replace('CALL_', '');
+              funcData = functions?.find(f => String(f.id).toUpperCase() === funcId.toUpperCase());
+            }
+
+            if (isLoop) {
+              const loopId = String(cmd.kind).replace('LOOP_', '');
+              loopData = loops?.find(l => l.id.toLowerCase() === loopId.toLowerCase());
+            }
+
+            const loopId = loopData?.id ?? String(cmd.kind).replace('LOOP_', '');
+
+            return (
+              <SortableCommandItem
+                key={cmd.id}
+                item={cmd}
+                onRemove={() => onRemove(cmd.id)}
+                functionName={funcData?.name}
+                loopTimes={loopData?.times}
+                loopCmd={loopData?.cmd}
+                isLoopExpanded={isLoop && expandedLoopId === loopId}
+                onToggleLoopExpand={isLoop ? () => onToggleLoopExpand?.(loopId) : undefined}
+                onLoopDelta={isLoop ? (delta) => onLoopDelta?.(loopId, delta) : undefined}
+                onLoopCycleCmd={isLoop ? () => onLoopCycleCmd?.(loopId) : undefined}
+                loopMin={loopsConfig?.minTimes}
+                loopMax={loopsConfig?.maxTimes}
+                isExecuting={cmd.id === executingCmdId}
+                disabled={disabled}
+              />
+            );
+          })}
         </SortableContext>
-        {items.length === 0 && <p className="hint">Arraste comandos aqui</p>}
+        {items.length === 0 && (
+          <p className="hint" title="Arraste comandos aqui" aria-label="Arraste comandos aqui">
+            <AiOutlineInbox size={26} aria-hidden="true" />
+          </p>
+        )}
       </div>
     </section>
   );
