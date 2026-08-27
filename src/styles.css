@@ -222,6 +222,7 @@ html,
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  overflow-x: hidden;
   max-height: 100%;
   padding: 6px;
 }
@@ -2197,6 +2198,13 @@ gap: 26px;
     flex: 1 1 auto;
     padding: 3px 4px;
     overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .command-rail .palette-grid {
+    grid-template-columns: 48px;
+    grid-auto-rows: 44px;
+    justify-content: center;
   }
 
   .controls-wrap {
@@ -2235,6 +2243,7 @@ gap: 26px;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    overflow-y: auto;
   }
 
   .program-header-actions {
@@ -2303,6 +2312,7 @@ gap: 26px;
 
   .cmd-tab.is-active {
     top: 8px;
+    padding-block: 3px;
   }
 
   .cmd-tab {
@@ -2313,7 +2323,7 @@ gap: 26px;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 4px 8px;
+    padding: 3px 8px;
     font-size: 12px;
     font-weight: 800;
     border-radius: 10px 10px 0 0;
@@ -2353,11 +2363,11 @@ gap: 26px;
   }
 
   #cmd-panel-main {
-    flex: 1 1 56px;
+    flex: 0 0 172px;
   }
 
   .cmd-tab-panel.is-active:not(#cmd-panel-main) {
-    flex: 1 1 30px;
+    flex: 0 0 96px;
   }
 
   .cmd-tab-panel .panel {
