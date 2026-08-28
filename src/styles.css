@@ -2363,15 +2363,11 @@ gap: 26px;
   }
 
   #cmd-panel-main {
-    flex: 1.8 1 0;
-    min-height: 140px;
-    max-height: 172px;
+    flex: 0 0 172px;
   }
 
   .cmd-tab-panel.is-active:not(#cmd-panel-main) {
-    flex: 1 1 0;
-    min-height: 70px;
-    max-height: 96px;
+    flex: 0 0 96px;
   }
 
   .cmd-tab-panel .panel {
