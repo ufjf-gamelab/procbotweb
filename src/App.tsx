@@ -29,7 +29,7 @@ import type { Cmd, CmdKind, Level } from './game/types';
 import { getFunctionTheme, BASE_COMMANDS } from './game/constants';
 import { useGameAudio } from './game/useGameAudio';
 import { isMuted, setMuted, playClick, playBump } from './game/audio';
-import { getSeenTutorials, markTutorialSeen, getSpeed, setSpeed } from './game/persistence';
+import { getSeenTutorials, markTutorialSeen, getSpeed, setSpeed, clearAllData } from './game/persistence';
 import type { Speed } from './game/persistence';
 import {
   AiOutlineHome,
@@ -93,6 +93,7 @@ export default function App() {
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [renamingFuncId, setRenamingFuncId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [wobbleTarget, setWobbleTarget] = useState<string | null>(null);
   const [seenTutorials, setSeenTutorials] = useState<string[]>(() => getSeenTutorials());
   const stateRef = useRef(state);
@@ -479,7 +480,7 @@ export default function App() {
       if (e.repeat) return;
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
-      if (confirmClearOpen || settingsOpen || mascotTipOpen || showWinModal || showTutorial || renamingFuncId) return;
+      if (confirmClearOpen || confirmResetOpen || settingsOpen || mascotTipOpen || showWinModal || showTutorial || renamingFuncId) return;
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -494,7 +495,7 @@ export default function App() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [view, confirmClearOpen, settingsOpen, mascotTipOpen, showWinModal, showTutorial, renamingFuncId, state.program.length, state.running, autoPlaying]);
+  }, [view, confirmClearOpen, confirmResetOpen, settingsOpen, mascotTipOpen, showWinModal, showTutorial, renamingFuncId, state.program.length, state.running, autoPlaying]);
 
   function renderRunControls() {
     return (
@@ -617,7 +618,20 @@ export default function App() {
         speedInfo={SPEED_CONFIG[speed]}
         onToggleMute={handleToggleMute}
         onCycleSpeed={handleCycleSpeed}
+        onResetData={() => setConfirmResetOpen(true)}
         onClose={() => setSettingsOpen(false)}
+      />
+
+      <ConfirmModal
+        isOpen={confirmResetOpen}
+        title="Apagar todos os dados?"
+        message="Você vai perder as fases concluídas, as estrelas e o programa atual, e o jogo recomeça do zero."
+        confirmLabel="Apagar"
+        onCancel={() => setConfirmResetOpen(false)}
+        onConfirm={() => {
+          clearAllData();
+          window.location.reload();
+        }}
       />
 
       <div className="level-controls">

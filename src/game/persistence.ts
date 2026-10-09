@@ -100,3 +100,13 @@ export function restoreGameState(saved: PersistedSession | null): GameState | nu
     bump: null,
   };
 }
+
+export function clearAllData() {
+  try {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('procbotweb:') || key === 'procbot-muted')
+      .forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // localStorage indisponível — nada para apagar
+  }
+}

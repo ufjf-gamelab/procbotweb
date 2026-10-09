@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AiOutlineSetting } from 'react-icons/ai';
+import { AiOutlineDelete, AiOutlineSetting } from 'react-icons/ai';
 import { IoVolumeHighOutline, IoVolumeMuteOutline } from 'react-icons/io5';
 
 type SpeedInfo = { label: string; Icon: React.ComponentType<{ size?: number; 'aria-hidden'?: boolean | 'true' | 'false' }> };
@@ -10,10 +10,11 @@ type Props = {
   speedInfo: SpeedInfo;
   onToggleMute: () => void;
   onCycleSpeed: () => void;
+  onResetData: () => void;
   onClose: () => void;
 };
 
-export function SettingsModal({ isOpen, muted, speedInfo, onToggleMute, onCycleSpeed, onClose }: Props) {
+export function SettingsModal({ isOpen, muted, speedInfo, onToggleMute, onCycleSpeed, onResetData, onClose }: Props) {
   if (!isOpen) return null;
 
   const SpeedIcon = speedInfo.Icon;
@@ -42,6 +43,11 @@ export function SettingsModal({ isOpen, muted, speedInfo, onToggleMute, onCycleS
           <button type="button" className="settings-modal-item" onClick={onCycleSpeed}>
             <SpeedIcon size={22} aria-hidden="true" />
             <span>Velocidade: {speedInfo.label}</span>
+          </button>
+
+          <button type="button" className="settings-modal-item settings-modal-danger" onClick={onResetData}>
+            <AiOutlineDelete size={22} aria-hidden="true" />
+            <span>Apagar todos os dados</span>
           </button>
         </div>
 
