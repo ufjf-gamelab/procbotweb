@@ -29,7 +29,7 @@ import type { Cmd, CmdKind, Level } from './game/types';
 import { getFunctionTheme, BASE_COMMANDS } from './game/constants';
 import { useGameAudio } from './game/useGameAudio';
 import { isMuted, setMuted, playClick, playBump } from './game/audio';
-import { hasSeenTutorial, markTutorialSeen, getSpeed, setSpeed } from './game/persistence';
+import { getSeenTutorials, markTutorialSeen, getSpeed, setSpeed } from './game/persistence';
 import type { Speed } from './game/persistence';
 import {
   AiOutlineHome,
@@ -46,6 +46,8 @@ import { TbBraces } from "react-icons/tb";
 import { GiTurtle, GiRabbit, GiSprint } from "react-icons/gi";
 import { SettingsModal } from './components/SettingsModal';
 import './styles.css';
+
+const DEFAULT_TIP = 'Vamos lá! Arraste os comandos para o Programa Principal.';
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -91,7 +93,7 @@ export default function App() {
   const [renamingFuncId, setRenamingFuncId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [wobbleTarget, setWobbleTarget] = useState<string | null>(null);
-  const [tutorialSeen, setTutorialSeen] = useState(() => hasSeenTutorial());
+  const [seenTutorials, setSeenTutorials] = useState<string[]>(() => getSeenTutorials());
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
   const runLoopActiveRef = useRef(false);
@@ -437,14 +439,14 @@ export default function App() {
     if (activeCmdTab === funcId) setActiveCmdTab('main');
   }
   const currentRealIndex = allLevels.findIndex(l => l.id === state.level.id);
-  const isLastLevel = currentRealIndex === allLevels.length - 1;
+  const nextOpenLevel = allLevels.slice(currentRealIndex + 1).find(l =>
+    !completedLevels.includes(l.id) && (l.anterior == null || completedLevels.includes(l.anterior))
+  );
+  const isLastLevel = !nextOpenLevel;
 
   function handleNextLevel() {
-    const actualIndex = allLevels.findIndex(l => l.id === state.level.id);
-    
-    if (actualIndex < allLevels.length - 1) {
-      const nextLevel = allLevels[actualIndex + 1];
-      dispatch({ type: 'load_level', level: nextLevel });
+    if (nextOpenLevel) {
+      dispatch({ type: 'load_level', level: nextOpenLevel });
     } else {
       setView('MENU');
     }
@@ -459,13 +461,16 @@ export default function App() {
     setView('MENU');
   }
 
+  const tutorialId = view === 'GAME' ? state.level.tutorial : undefined;
+  const showTutorial = !!tutorialId && !seenTutorials.includes(tutorialId);
+
   function handleFinishTutorial() {
-    markTutorialSeen();
-    setTutorialSeen(true);
+    if (tutorialId) {
+      markTutorialSeen(tutorialId);
+      setSeenTutorials(prev => [...prev, tutorialId]);
+    }
     setMascotTipOpen(false);
   }
-
-  const showTutorial = view === 'GAME' && state.level.id === '1' && !tutorialSeen;
 
   useEffect(() => {
     if (view !== 'GAME') return;
@@ -594,12 +599,12 @@ export default function App() {
         }}
       />
 
-      {showTutorial ? (
-        <Tutorial steps={TUTORIAL_STEPS} onFinish={handleFinishTutorial} />
+      {showTutorial && tutorialId ? (
+        <Tutorial key={tutorialId} steps={TUTORIALS[tutorialId]} onFinish={handleFinishTutorial} />
       ) : (
         <MascotModal
           isOpen={mascotTipOpen}
-          tip={mascotTip}
+          tip={state.level.hint ?? DEFAULT_TIP}
           onClose={() => setMascotTipOpen(false)}
         />
       )}
@@ -726,7 +731,7 @@ export default function App() {
                   </div>
 
                   {state.functions.length > 0 && (
-                    <div className="cmd-tabs" role="tablist" aria-label="Funções">
+                    <div className="cmd-tabs" role="tablist" aria-label="Funções" data-tutorial="function-tabs">
                       {state.functions.map((funcData) => {
                         const isActive = openFunctionId === funcData.id;
                         const isSelectedTab = activeCmdTab === funcData.id;

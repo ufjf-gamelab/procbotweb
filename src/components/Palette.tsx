@@ -11,9 +11,10 @@ type PalItemProps = {
   onCommandClick: () => void;
   dynamicLabel?: string;
   disabled?: boolean;
+  tutorialTarget?: string;
 };
 
-function PalItem({ kind, onCommandClick, dynamicLabel, disabled }: PalItemProps) {
+function PalItem({ kind, onCommandClick, dynamicLabel, disabled, tutorialTarget }: PalItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: `pal-${kind}`, disabled });
 
@@ -29,6 +30,7 @@ function PalItem({ kind, onCommandClick, dynamicLabel, disabled }: PalItemProps)
       ref={setNodeRef}
       style={style}
       className="palette-item-wrapper"
+      data-tutorial={tutorialTarget}
       whileHover={disabled ? undefined : { scale: 1.04 }}
       whileTap={disabled ? undefined : { scale: 0.98 }}
       onClick={disabled ? undefined : onCommandClick}
@@ -65,7 +67,7 @@ export function Palette({onCommandClick, functions = [], showLoopTile = false, d
             disabled={disabled}
           />
         ))}
-        {functions.map(f => {
+        {functions.map((f, index) => {
 
           const cmdKind = `CALL_${f.id.toUpperCase()}`;
           return (
@@ -74,6 +76,7 @@ export function Palette({onCommandClick, functions = [], showLoopTile = false, d
               kind={cmdKind}
               onCommandClick={() => onCommandClick(cmdKind)}
               dynamicLabel={f.name}
+              tutorialTarget={index === 0 ? 'palette-function' : undefined}
               disabled={disabled}
             />
           );

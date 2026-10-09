@@ -114,7 +114,7 @@ export function Program({ programId, title, count, max, onTitleChange, isFull, i
       className={clsx('panel', isSelected && 'is-target', cornerAction && 'has-corner-action', wobble && 'is-wobbling')}
       style={{ ...panelStyle, cursor: onSelect ? 'pointer' : undefined }}
       onClick={onSelect}
-      data-tutorial={programId === 'main' ? 'program-main' : undefined}
+      data-tutorial={programId === 'main' ? 'program-main' : programId === 'f1' ? 'program-function' : undefined}
     >
       {!hideHeader && (
       <h3>

@@ -1,8 +1,9 @@
 import type { GameState } from './types';
 import { allLevels } from './levels';
 
-const STORAGE_KEY = 'procbotweb:session:v1';
+const STORAGE_KEY = 'procbotweb:session:v2';
 const TUTORIAL_KEY = 'procbotweb:tutorial-seen:v1';
+const TUTORIALS_KEY = 'procbotweb:tutorials-seen:v2';
 const SPEED_KEY = 'procbotweb:speed:v1';
 
 export type Speed = 'slow' | 'normal' | 'fast';
@@ -38,17 +39,22 @@ export function saveSession(data: PersistedSession) {
   }
 }
 
-export function hasSeenTutorial(): boolean {
+export function getSeenTutorials(): string[] {
   try {
-    return localStorage.getItem(TUTORIAL_KEY) === '1';
+    const raw = localStorage.getItem(TUTORIALS_KEY);
+    const list: string[] = raw ? JSON.parse(raw) : [];
+    if (localStorage.getItem(TUTORIAL_KEY) === '1' && !list.includes('basico')) list.push('basico');
+    return list;
   } catch {
-    return false;
+    return [];
   }
 }
 
-export function markTutorialSeen() {
+export function markTutorialSeen(id: string) {
   try {
-    localStorage.setItem(TUTORIAL_KEY, '1');
+    const list = getSeenTutorials();
+    if (!list.includes(id)) list.push(id);
+    localStorage.setItem(TUTORIALS_KEY, JSON.stringify(list));
   } catch {
     // localStorage indisponível — tutorial simplesmente reaparece na próxima visita
   }
