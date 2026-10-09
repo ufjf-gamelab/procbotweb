@@ -18,6 +18,8 @@ const BLOCK_ACCENTS: Record<string, string> = {
 
 export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Props) {
   const totalStars = Object.values(levelStars).reduce((sum, s) => sum + s, 0);
+  const isOpen = (level: Level) => level.anterior == null || completedLevels.includes(level.anterior);
+  const visibleBlocks = levelBlocks.filter(block => block.levels.some(isOpen));
 
   return (
   <div className="level-page">
@@ -37,11 +39,11 @@ export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Prop
       <h1>ESCOLHA UMA FASE</h1>
 
       <div className="level-blocks">
-        {levelBlocks.map((block, blockIndex) => {
+        {visibleBlocks.map((block, blockIndex) => {
           const accent = BLOCK_ACCENTS[block.key];
           const blockStars = block.levels.reduce((sum, level) => sum + (levelStars[level.id] ?? 0), 0);
           const blockStarsMax = block.levels.length * 3;
-          const openLevels = block.levels.filter(level => level.anterior == null || completedLevels.includes(level.anterior));
+          const openLevels = block.levels.filter(isOpen);
           const pendingLevels = openLevels.filter(level => !completedLevels.includes(level.id));
           const hasDependents = (level: Level) => block.levels.some(other => other.anterior === level.id);
           const nextLocked = pendingLevels.length !== 1 ? undefined : block.levels
