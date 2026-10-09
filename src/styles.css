@@ -814,10 +814,9 @@ html,
 
 .level-page {
   position: relative;
-  min-height: 100vh;
+  height: 100%;
 
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
 
   display: flex;
   flex-direction: column;
@@ -2818,7 +2817,7 @@ html,
     min-width: 0;
     grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: 48px;
+    grid-auto-columns: minmax(36px, 48px);
     grid-template-rows: 48px;
     justify-content: flex-start;
     overflow-x: auto;
@@ -2829,8 +2828,8 @@ html,
   }
 
   .command-rail .palette-item-wrapper {
-    width: 48px;
-    min-width: 48px;
+    width: auto;
+    min-width: 0;
   }
 
   .palette-item-wrapper {
