@@ -1152,6 +1152,50 @@ html,
 .level-card.completed .level-badge {
   color: #fbbf24;
 }
+.level-badge-genius {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: flex;
+  font-size: 18px;
+  line-height: 1;
+  z-index: 1;
+  color: #fde047;
+  filter: drop-shadow(0 0 6px rgba(253, 224, 71, 0.9));
+}
+.win-genius {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(253, 224, 71, 0.14);
+  border: 1px solid rgba(253, 224, 71, 0.6);
+  color: #fde047;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+}
+.win-genius svg {
+  flex: 0 0 auto;
+  font-size: 22px;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .win-genius {
+    gap: 6px;
+    margin: 0 0 4px;
+    padding: 4px 8px;
+    font-size: 0.78rem;
+  }
+  .win-genius svg {
+    font-size: 16px;
+  }
+  .win-modal.has-genius .win-stats p {
+    display: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .level-card:not(.completed):not(.locked) {
     animation: none;

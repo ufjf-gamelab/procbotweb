@@ -1,5 +1,7 @@
 import type { Level } from '../types';
 
+// "Resolução ótima" aqui = a esperada, sem recursão. A auto-chamada é permitida; se gastar menos comandos, rende a "solução genial".
+
 // Resolução ótima (7 comandos): MAIN = [F1, F1, F1] | F1 = [ANDAR, ANDAR, ACENDER, DIREITA]
 export const p1: Level = {
   id: '9',

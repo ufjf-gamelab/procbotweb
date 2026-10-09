@@ -1,6 +1,6 @@
 import { levelBlocks } from '../game/levels';
 import type { Level } from '../game/types';
-import { AiFillCheckCircle, AiFillLock, AiFillPlayCircle, AiFillStar } from "react-icons/ai";
+import { AiFillBulb, AiFillCheckCircle, AiFillLock, AiFillPlayCircle, AiFillStar } from "react-icons/ai";
  import { BsRobot } from "react-icons/bs";
  import robotTip from "../assets/robot_tip.png";
 
@@ -8,6 +8,7 @@ type Props = {
   onSelectLevel: (level: Level) => void;
   completedLevels: string[];
   levelStars: Record<string, number>;
+  geniusLevels: string[];
 };
 
 const BLOCK_ACCENTS: Record<string, string> = {
@@ -16,7 +17,7 @@ const BLOCK_ACCENTS: Record<string, string> = {
   lacos: '#fb923c',
 };
 
-export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Props) {
+export function LevelSelect({ onSelectLevel, completedLevels, levelStars, geniusLevels }: Props) {
   const totalStars = Object.values(levelStars).reduce((sum, s) => sum + s, 0);
   const isOpen = (level: Level) => level.anterior == null || completedLevels.includes(level.anterior);
   const visibleBlocks = levelBlocks.filter(block => block.levels.some(isOpen));
@@ -78,7 +79,7 @@ export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Prop
                   const starsEarned = levelStars[level.id] ?? 0;
                   const levelName = level.name ?? `Fase ${level.id}`;
 
-                  const cardLabel = `${levelName}${isLocked ? ', bloqueada' : isCompleted ? `, concluída com ${starsEarned} de 3 estrelas` : ', disponível'}`;
+                  const cardLabel = `${levelName}${isLocked ? ', bloqueada' : isCompleted ? `, concluída com ${starsEarned} de 3 estrelas${geniusLevels.includes(level.id) ? ', solução genial' : ''}` : ', disponível'}`;
 
                   return (
                     <button
@@ -92,6 +93,11 @@ export function LevelSelect({ onSelectLevel, completedLevels, levelStars }: Prop
                       disabled={isLocked}
                       aria-label={cardLabel}
                     >
+                      {isCompleted && geniusLevels.includes(level.id) && (
+                        <span className="level-badge-genius" title="Solução genial!" aria-hidden="true">
+                          <AiFillBulb />
+                        </span>
+                      )}
                       {!isLocked && (
                         <span className="level-badge" aria-hidden="true">
                           {isCompleted ? <AiFillCheckCircle /> : <AiFillPlayCircle />}

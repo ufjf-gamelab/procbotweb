@@ -11,6 +11,7 @@ export type Speed = 'slow' | 'normal' | 'fast';
 export type PersistedSession = {
   completedLevels: string[];
   levelStars: Record<string, number>;
+  geniusLevels?: string[];
   view: 'MENU' | 'GAME';
   levelId: string;
   robot: { x: number; y: number; dir: 0 | 1 | 2 | 3 };

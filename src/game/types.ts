@@ -8,7 +8,6 @@ export type Level = {
   id: string;
   name?: string;
   hint?: string;
-  allowRecursion?: boolean;
   tutorial?: 'basico' | 'funcao' | 'segundaFuncao';
   anterior?: string;
   width: number; height: number;

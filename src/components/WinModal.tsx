@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import Confetti from 'react-confetti';
 import { useEffect, useRef, useState } from 'react';
 
-import { AiFillHome, AiOutlineRedo, AiOutlineArrowRight, AiFillStar, AiOutlineStar } from "react-icons/ai";
+import { AiFillHome, AiOutlineRedo, AiOutlineArrowRight, AiFillStar, AiOutlineStar, AiFillBulb } from "react-icons/ai";
 
 type Props = {
   isOpen: boolean;
@@ -10,11 +10,12 @@ type Props = {
   onMenu: () => void;
   onReplay: () => void;
   isLastLevel: boolean;
+  beatOptimal: boolean;
   stepsCount: number;
   stars: 1 | 2 | 3;
 };
 
-export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, stepsCount, stars }: Props) {
+export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, beatOptimal, stepsCount, stars }: Props) {
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -35,7 +36,7 @@ export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, s
       <Confetti aria-hidden="true" width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={500} />
 
       <motion.div
-        className="win-modal"
+        className={`win-modal${beatOptimal ? ' has-genius' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="win-modal-title"
@@ -54,6 +55,13 @@ export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, s
               : <AiOutlineStar key={i} className="icon-star" size={36} aria-hidden="true" />
           ))}
         </div>
+
+        {beatOptimal && (
+          <div className="win-genius" role="status">
+            <AiFillBulb aria-hidden="true" />
+            <span>Solução genial! Você usou menos comandos do que a gente esperava!</span>
+          </div>
+        )}
 
         <div className="win-stats">
           <p>Você completou o desafio!</p>

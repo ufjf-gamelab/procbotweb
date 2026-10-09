@@ -81,6 +81,7 @@ export default function App() {
   const [saved] = useState(() => loadSession());
   const [completedLevels, setCompletedLevels] = useState<string[]>(saved?.completedLevels ?? []);
   const [levelStars, setLevelStars] = useState<Record<string, number>>(saved?.levelStars ?? {});
+  const [geniusLevels, setGeniusLevels] = useState<string[]>(saved?.geniusLevels ?? []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [state, dispatch] = useReducer(reducer, undefined, () => restoreGameState(saved) ?? initialState);
   const [showWinModal, setShowWinModal] = useState(false);
@@ -106,6 +107,7 @@ export default function App() {
     saveSession({
       completedLevels,
       levelStars,
+      geniusLevels,
       view,
       levelId: state.level.id,
       robot: state.robot,
@@ -115,7 +117,7 @@ export default function App() {
       loops: state.loops,
       stepIndex: state.stepIndex,
     });
-  }, [completedLevels, levelStars, view, state]);
+  }, [completedLevels, levelStars, geniusLevels, view, state]);
 
   useEffect(() => {
     if (state.win) {
@@ -123,6 +125,9 @@ export default function App() {
         setCompletedLevels(prev => [...prev, state.level.id]);
       }
       const earnedStars = computeStars(state);
+      if (totalCommandsUsed(state) < state.level.optimalCommands && !geniusLevels.includes(state.level.id)) {
+        setGeniusLevels(prev => [...prev, state.level.id]);
+      }
       setLevelStars(prev => ({
         ...prev,
         [state.level.id]: Math.max(prev[state.level.id] ?? 0, earnedStars),
@@ -134,7 +139,7 @@ export default function App() {
     } else {
       setShowWinModal(false);
     }
-  }, [state.win, state.level.id, completedLevels]);
+  }, [state.win, state.level.id, completedLevels, geniusLevels]);
 
   useEffect(() => {
     if (state.functions.length === 0) {
@@ -356,11 +361,6 @@ export default function App() {
     }, 450);
   }
 
-  const activeFuncIndex = state.functions.findIndex(f => f.id === activeCmdTab);
-  const paletteFunctions = state.level.allowRecursion || activeFuncIndex === -1
-    ? state.functions
-    : state.functions.slice(0, activeFuncIndex);
-
   function handleAddByClick(kind: CmdKind) {
     if (state.running) return;
     if (String(kind) === 'REPEAT_NEW') {
@@ -569,6 +569,7 @@ export default function App() {
           onSelectLevel={handleSelectLevel}
           completedLevels={completedLevels}
           levelStars={levelStars}
+          geniusLevels={geniusLevels}
         />
       </>
     );
@@ -582,6 +583,7 @@ export default function App() {
               stepsCount={totalCommandsUsed(state)}
               stars={computeStars(state)}
               isLastLevel={isLastLevel}
+              beatOptimal={totalCommandsUsed(state) < state.level.optimalCommands}
               onNextLevel={handleNextLevel}
               onReplay={handleReplay}
               onMenu={handleMenu}
@@ -684,7 +686,7 @@ export default function App() {
           <div className="command-rail" data-tutorial="palette">
             <Palette
               onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
-              functions={paletteFunctions}
+              functions={state.functions}
               showLoopTile={canAddLoop}
               disabled={state.running}
             />
