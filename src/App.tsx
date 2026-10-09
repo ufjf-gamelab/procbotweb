@@ -56,24 +56,34 @@ const SPEED_CONFIG: Record<Speed, { label: string; stepDelay: number; Icon: type
   fast: { label: 'Rápido', stepDelay: 250, Icon: GiSprint },
 };
 
-const TUTORIAL_STEPS: TutorialStep[] = [
-  { target: 'board', text: 'Esse é o tabuleiro! Seu robô precisa se mover até a lâmpada e acender ela. 💡' },
-  { target: 'palette', text: 'Aqui ficam os comandos. Toque ou arraste um comando para o Programa Principal.' },
-  { target: 'program-main', text: 'Os comandos que você escolher aparecem aqui, na ordem que o robô vai seguir.' },
-  { target: 'play-button', text: 'Quando terminar seu programa, toque em Play para ver o robô em ação!' },
-];
+const TUTORIALS: Record<string, TutorialStep[]> = {
+  basico: [
+    { target: 'board', text: 'Esse é o tabuleiro! Seu robô precisa se mover até a lâmpada e acender ela. 💡' },
+    { target: 'palette', text: 'Aqui ficam os comandos. Toque ou arraste um comando para o Programa Principal.' },
+    { target: 'program-main', text: 'Os comandos que você escolher aparecem aqui, na ordem que o robô vai seguir.' },
+    { target: 'play-button', text: 'Quando terminar seu programa, toque em Play para ver o robô em ação!' },
+  ],
+  funcao: [
+    { target: 'palette-function', text: 'Botão novo! O F1 chama a sua função. Toque nele para colocá-lo no Programa Principal.' },
+    { target: 'program-function', text: 'Esta é a caixa da F1. Os comandos que você guardar aqui rodam toda vez que a F1 for chamada.' },
+    { target: 'program-main', text: 'No Programa Principal, chame a F1 quantas vezes precisar. Você monta a sequência uma vez só!' },
+  ],
+  segundaFuncao: [
+    { target: 'function-tabs', text: 'Agora você tem duas funções! Use as abas para escolher entre a F1 e a F2.' },
+    { target: 'palette-function', text: 'Dentro da F2 você pode usar o botão F1. Escolha a aba da F2 e toque no F1 para chamá-lo lá dentro.' },
+  ],
+};
 
 export default function App() {
   // const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
   const [saved] = useState(() => loadSession());
-  const [completedLevels, setCompletedLevels] = useState<string[]>(saved?.completedLevels ?? ["1","2","3","4","5"]);
+  const [completedLevels, setCompletedLevels] = useState<string[]>(saved?.completedLevels ?? []);
   const [levelStars, setLevelStars] = useState<Record<string, number>>(saved?.levelStars ?? {});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [state, dispatch] = useReducer(reducer, undefined, () => restoreGameState(saved) ?? initialState);
   const [showWinModal, setShowWinModal] = useState(false);
   const [view, setView] = useState<'MENU' | 'GAME'>(saved?.view ?? 'MENU');
-  const [mascotTip] = useState("Vamos lá! Arraste os comandos para o Programa Principal.");
-  const [mascotTipOpen, setMascotTipOpen] = useState(true);
+  const [mascotTipOpen, setMascotTipOpen] = useState(false);
   const [activeCmdTab, setActiveCmdTab] = useState<string>('main');
   const [openFunctionId, setOpenFunctionId] = useState<string | null>(null);
   const [expandedLoopId, setExpandedLoopId] = useState<string | null>(null);
