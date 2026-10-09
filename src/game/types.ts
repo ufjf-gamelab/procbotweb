@@ -6,6 +6,11 @@ export type Pos = { x: number; y: number };
 export type LoopsConfig = { maxLoops: number; maxCommands: number; minTimes: number; maxTimes: number };
 export type Level = {
   id: string;
+  name?: string;
+  hint?: string;
+  allowRecursion?: boolean;
+  tutorial?: 'basico' | 'funcao' | 'segundaFuncao';
+  anterior?: string;
   width: number; height: number;
   start: { x: number; y: number; dir: Dir };
   lamps: Pos[];

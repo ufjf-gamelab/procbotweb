@@ -1,5 +1,7 @@
 import type { Action, GameState, Cmd, CmdKind, Level, LoopDef, Dir } from './types';
-import { level8 } from './levels';
+import { allLevels } from './levels';
+
+const firstLevel = allLevels[0];
 
 const key = (x: number, y: number) => `${x},${y}`;
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
@@ -13,6 +15,12 @@ const initialProgram: Cmd[] = [];
 
 const MAX_CALL_DEPTH = 300;
 
+const isForbiddenCall = (state: GameState, containerId: string, kind: string): boolean => {
+  if (state.level.allowRecursion || containerId === 'main' || !kind.startsWith('CALL_')) return false;
+  const indexOf = (id: string) => state.functions.findIndex(f => f.id.toLowerCase() === id.toLowerCase());
+  return indexOf(kind.slice(5)) >= indexOf(containerId);
+};
+
 const initFunctionsState = (level: Level) => {
   return (level.functionsConfig || []).map(config => ({
     id: config.id,
@@ -23,11 +31,11 @@ const initFunctionsState = (level: Level) => {
 };
 
 export const initialState: GameState = {
-  level: level8,
-  robot: { ...level8.start },
+  level: firstLevel,
+  robot: { ...firstLevel.start },
   lit: new Set<string>(),
   program: initialProgram,
-  functions: initFunctionsState(level8),
+  functions: initFunctionsState(firstLevel),
   loops: [],
   callStack: [],
   stepIndex: 0,
@@ -258,6 +266,7 @@ export function reducer(state: GameState, action: Action): GameState {
       const funcIndex = state.functions.findIndex(f => f.id === action.funcId);
 
       if (funcIndex === -1) return state;
+      if (isForbiddenCall(state, action.funcId, String(action.kind))) return state;
 
       const funcState = state.functions[funcIndex];
 
@@ -322,6 +331,7 @@ export function reducer(state: GameState, action: Action): GameState {
       const sourceProgram = getProgram(fromContainer);
       const cmd = sourceProgram?.find(c => c.id === cmdId);
       if (!sourceProgram || !cmd) return state;
+      if (isForbiddenCall(state, toContainer, String(cmd.kind))) return state;
 
       const targetLimit = toContainer === 'main'
         ? (state.level.maxMain ?? 99)

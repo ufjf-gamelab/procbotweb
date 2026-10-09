@@ -344,6 +344,11 @@ export default function App() {
     }, 450);
   }
 
+  const activeFuncIndex = state.functions.findIndex(f => f.id === activeCmdTab);
+  const paletteFunctions = state.level.allowRecursion || activeFuncIndex === -1
+    ? state.functions
+    : state.functions.slice(0, activeFuncIndex);
+
   function handleAddByClick(kind: CmdKind) {
     if (state.running) return;
     if (String(kind) === 'REPEAT_NEW') {
@@ -664,7 +669,7 @@ export default function App() {
           <div className="command-rail" data-tutorial="palette">
             <Palette
               onCommandClick={(kind) => handleAddByClick(kind as CmdKind)}
-              functions={state.functions}
+              functions={paletteFunctions}
               showLoopTile={canAddLoop}
               disabled={state.running}
             />
