@@ -10,6 +10,7 @@ import {
   DragOverlay } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { allLevels } from './game/levels';
+import { HomeScreen } from './components/HomeScreen';
 import { LevelSelect } from './components/LevelSelect';
 import { arrayMove } from '@dnd-kit/sortable';
 import { reducer, initialState } from './game/reducer';
@@ -85,7 +86,8 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [state, dispatch] = useReducer(reducer, undefined, () => restoreGameState(saved) ?? initialState);
   const [showWinModal, setShowWinModal] = useState(false);
-  const [view, setView] = useState<'MENU' | 'GAME'>(saved?.view ?? 'MENU');
+  const [view, setView] = useState<'HOME' | 'MENU' | 'GAME'>('HOME');
+  const resumeViewRef = useRef<'MENU' | 'GAME'>(saved?.view ?? 'MENU');
   const [mascotTipOpen, setMascotTipOpen] = useState(false);
   const [activeCmdTab, setActiveCmdTab] = useState<string>('main');
   const [openFunctionId, setOpenFunctionId] = useState<string | null>(null);
@@ -109,7 +111,7 @@ export default function App() {
       completedLevels,
       levelStars,
       geniusLevels,
-      view,
+      view: view === 'HOME' ? resumeViewRef.current : view,
       levelId: state.level.id,
       robot: state.robot,
       lit: Array.from(state.lit),
@@ -563,10 +565,23 @@ export default function App() {
   }
   const execCmdIdFor = (ownerId: string) => activeChainByOwner.get(ownerId) ?? null;
 
+  if (view === 'HOME') {
+    return (
+      <HomeScreen
+        onPlay={() => {
+          playClick();
+          setView(resumeViewRef.current);
+          resumeViewRef.current = 'MENU';
+        }}
+      />
+    );
+  }
+
   if (view === 'MENU') {
     return (
       <>
         <LevelSelect
+          onHome={() => { playClick(); setView('HOME'); }}
           onSelectLevel={handleSelectLevel}
           completedLevels={completedLevels}
           levelStars={levelStars}

@@ -1,10 +1,11 @@
 import { levelBlocks } from '../game/levels';
 import type { Level } from '../game/types';
-import { AiFillBulb, AiFillCheckCircle, AiFillLock, AiFillPlayCircle, AiFillStar } from "react-icons/ai";
+import { AiFillBulb, AiFillCheckCircle, AiFillHome, AiFillLock, AiFillPlayCircle, AiFillStar } from "react-icons/ai";
  import { BsRobot } from "react-icons/bs";
  import robotTip from "../assets/robot_tip.png";
 
 type Props = {
+  onHome: () => void;
   onSelectLevel: (level: Level) => void;
   completedLevels: string[];
   levelStars: Record<string, number>;
@@ -17,7 +18,7 @@ const BLOCK_ACCENTS: Record<string, string> = {
   lacos: '#fb923c',
 };
 
-export function LevelSelect({ onSelectLevel, completedLevels, levelStars, geniusLevels }: Props) {
+export function LevelSelect({ onHome, onSelectLevel, completedLevels, levelStars, geniusLevels }: Props) {
   const totalStars = Object.values(levelStars).reduce((sum, s) => sum + s, 0);
   const isOpen = (level: Level) => level.anterior == null || completedLevels.includes(level.anterior);
   const visibleBlocks = levelBlocks.filter(block => block.levels.some(isOpen));
@@ -28,6 +29,9 @@ export function LevelSelect({ onSelectLevel, completedLevels, levelStars, genius
     <div className="level-bg-overlay" />
 
     <header className="levels-header">
+      <button type="button" className="home-button" onClick={onHome} title="Início" aria-label="Voltar para o início">
+        <AiFillHome size={24} aria-hidden="true" />
+      </button>
       <div className="player-progress">
         <div className="progress-stars" title={`${totalStars} estrelas no total`} aria-label={`${totalStars} estrelas no total`}>
           <AiFillStar aria-hidden="true" />

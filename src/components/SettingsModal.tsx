@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { AiOutlineDelete, AiOutlineSetting } from 'react-icons/ai';
 import { IoVolumeHighOutline, IoVolumeMuteOutline } from 'react-icons/io5';
+import { APP_VERSION } from '../game/version';
 
 type SpeedInfo = { label: string; Icon: React.ComponentType<{ size?: number; 'aria-hidden'?: boolean | 'true' | 'false' }> };
 
@@ -50,6 +51,8 @@ export function SettingsModal({ isOpen, muted, speedInfo, onToggleMute, onCycleS
             <span>Apagar todos os dados</span>
           </button>
         </div>
+
+        <p className="app-version">{APP_VERSION}</p>
 
         <div className="win-actions">
           <button type="button" onClick={onClose} className="btn-secondary">
