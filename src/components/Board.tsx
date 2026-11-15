@@ -57,23 +57,41 @@ export function Board({
   running?: boolean;
 }) {
   const cells: JSX.Element[] = [];
-  const [celebrating, setCelebrating] = useState(false);
+  const [celebrateCell, setCelebrateCell] = useState<string | null>(null);
   const [moveEffect, setMoveEffect] = useState<'step' | 'turn' | null>(null);
   const [bumping, setBumping] = useState(false);
   const prevRobotRef = useRef({ x: robot.x, y: robot.y, dir: robot.dir });
   const prevLitRef = useRef<Set<string>>(new Set());
   const lastBumpSeq = useRef(0);
+  const celebrateTimer = useRef<number | undefined>(undefined);
+  const bumpTimer = useRef<number | undefined>(undefined);
+
+  const stopCelebrating = () => {
+    clearTimeout(celebrateTimer.current);
+    setCelebrateCell(null);
+  };
+
+  const stopBumping = () => {
+    clearTimeout(bumpTimer.current);
+    setBumping(false);
+  };
+
+  useEffect(() => () => {
+    clearTimeout(celebrateTimer.current);
+    clearTimeout(bumpTimer.current);
+  }, []);
 
   useEffect(() => {
     if (!bump || bump.seq === lastBumpSeq.current || !running) return;
     lastBumpSeq.current = bump.seq;
+    stopCelebrating();
     setBumping(true);
-    const timer = setTimeout(() => setBumping(false), 320);
-    return () => clearTimeout(timer);
+    clearTimeout(bumpTimer.current);
+    bumpTimer.current = window.setTimeout(() => setBumping(false), 320);
   }, [bump, running]);
 
   useEffect(() => {
-    if (!running) setBumping(false);
+    if (!running) stopBumping();
   }, [running]);
 
   useEffect(() => {
@@ -82,9 +100,9 @@ export function Board({
     prevLitRef.current = lit;
 
     if (justLit) {
-      setCelebrating(true);
-      const timer = setTimeout(() => setCelebrating(false), 400);
-      return () => clearTimeout(timer);
+      setCelebrateCell(currentKey);
+      clearTimeout(celebrateTimer.current);
+      celebrateTimer.current = window.setTimeout(() => setCelebrateCell(null), 400);
     }
   }, [robot.x, robot.y, lit]);
 
@@ -96,6 +114,8 @@ export function Board({
 
     if (!moved && !turned) return;
 
+    stopCelebrating();
+    stopBumping();
     setMoveEffect(moved ? 'step' : 'turn');
     const timer = setTimeout(() => setMoveEffect(null), 420);
     return () => clearTimeout(timer);
@@ -137,7 +157,7 @@ export function Board({
       const isLit = lit.has(`${x},${y}`);
       const isRobotHere = (robot.x === x && robot.y === y);
       
-      const showJump = isRobotHere && celebrating;
+      const showJump = isRobotHere && celebrateCell === `${x},${y}`;
       const showBump = isRobotHere && bumping && !!running;
       const animKind = showJump ? 'jump' : showBump ? 'bump' : moveEffect === 'step' ? 'step' : moveEffect === 'turn' ? 'turn' : 'idle';
       const anim = buildAnimations(bump?.dir ?? 0)[animKind];
