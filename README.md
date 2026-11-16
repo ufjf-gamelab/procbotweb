@@ -1,51 +1,64 @@
-# Proc Bot Web
+# ProcBot Web
 
-> Base arquitetural web responsiva para o ensino de Pensamento Computacional e Reuso de Código.
+Jogo educacional web para o ensino de pensamento computacional e reuso de código a crianças e adolescentes.
 
-Este projeto é o artefato prático do Trabalho de Conclusão de Curso em Ciência da Computação da Universidade Federal de Juiz de Fora (Ufjf). Trata-se de um protótipo de alta fidelidade de um jogo educativo (*Serious Game*) focado em ensinar lógica de programação para crianças, com ênfase na experiência de usuário em dispositivos móveis.
+O ProcBot Web está sendo desenvolvido como Trabalho de Conclusão de Curso (TCC) do curso de Bacharelado em Ciência da Computação do Departamento de Ciência da Computação (DCC) do Instituto de Ciências Exatas (ICE) da Universidade Federal de Juiz de Fora (UFJF).
 
-## 🎯 Objetivos do Projeto
+**Versão publicada:** https://ufjf-gamelab.github.io/procbotweb/
 
-- **Acessibilidade Mobile:** Resolver o problema de usabilidade de ferramentas de blocos (VPL) em telas de toque, implementando física de arraste (*drag-and-drop*) e layouts responsivos.
-- **Ensino de Abstração:** Introduzir o conceito de **Funções** (reuso de código) através de mecânicas de jogo que limitam recursos e forçam a otimização.
-- **Arquitetura Sólida:** Estabelecer uma base de engenharia de software robusta (Frontend) para futuras expansões.
+## Sobre o projeto
 
-## 🚀 Tecnologias Utilizadas
+O jogo é um *serious game* inspirado no Lightbot. O jogador programa um robô com blocos de comandos para que ele percorra o tabuleiro e acenda todas as lâmpadas da fase. O projeto prioriza o uso em dispositivos móveis, tanto em orientação retrato quanto paisagem, sem necessidade de instalação.
 
-O projeto foi desenvolvido como uma *Single Page Application* (SPA) moderna, utilizando:
+As fases estão organizadas em três blocos, com dificuldade progressiva e desbloqueio em árvore:
 
-- **[React](https://react.dev/)**: Biblioteca principal para construção da interface.
-- **[TypeScript](https://www.typescriptlang.org/)**: Para tipagem estática e segurança lógica do interpretador.
-- **[Dnd Kit](https://dndkit.com/)**: Implementação dos sensores de toque, colisão e física de arraste.
-- **[Framer Motion](https://www.framer.com/motion/)**: Animações de layout, transições e feedback visual.
+| Bloco | Conceitos trabalhados |
+| --- | --- |
+| Básicos | Sequência de comandos, estado e algoritmo |
+| Procedimentos | Abstração, decomposição, reconhecimento de padrões e reuso por meio de funções |
+| Laços | Repetição por meio de recursão |
 
-## ✨ Funcionalidades Implementadas
+## Objetivos
 
-- ✅ **Interpretador de Comandos:** Execução sequencial de blocos lógicos.
-- ✅ **Sistema de Arraste Otimizado:** Diferenciação entre gestos de *scroll* e *drag* em celulares.
-- ✅ **Layout Responsivo Inteligente:** Detecção de orientação (Portrait/Landscape) e adaptação de Grid.
-- ✅ **Máquina de Estados Finita:** Gerenciamento robusto dos estados do jogo (Executando, Vitória, Falha).
-- ✅ **Mecânica de Funções:** Suporte a sub-rotinas e pilha de execução (*Call Stack*).
+- Oferecer uma ferramenta de programação por blocos adequada a telas de toque, com arraste de comandos e layout responsivo.
+- Introduzir o conceito de funções (procedimentos) por meio de mecânicas que limitam a quantidade de comandos e incentivam o reuso.
+- Disponibilizar um jogo gratuito, executável no navegador de computadores, tablets e celulares.
 
-## 📦 Como Rodar o Projeto
+## Funcionalidades
 
-Pré-requisitos: Você precisa ter o [Node.js](https://nodejs.org/) instalado em sua máquina.
+- Interpretador de comandos com execução contínua, passo a passo e três velocidades.
+- Funções (sub-rotinas) com pilha de execução, incluindo chamadas recursivas.
+- Pontuação em estrelas conforme o número de comandos utilizados.
+- Tutoriais guiados e dicas por fase.
+- Progresso salvo localmente no navegador, com opção de apagar todos os dados.
+- Layout responsivo para retrato e paisagem.
+
+## Tecnologias
+
+- [React](https://react.dev/) e [TypeScript](https://www.typescriptlang.org/), com [Vite](https://vite.dev/)
+- [dnd kit](https://dndkit.com/) para arrastar e soltar comandos
+- [Framer Motion](https://www.framer.com/motion/) para animações
+
+## Execução local
+
+Pré-requisito: [Node.js](https://nodejs.org/) instalado.
 
 ```bash
-# 1. Clone este repositório
-git clone [https://github.com/ufjf-gamelab/procbotweb](https://github.com/ufjf-gamelab/procbotweb.git)
-
-# 2. Acesse a pasta do projeto
+git clone https://github.com/ufjf-gamelab/procbotweb.git
 cd procbotweb
-
-# 3. Instale as dependências
 npm install
-
-# 4. Execute o projeto em modo de desenvolvimento
 npm run dev
-
 ```
 
-Autora: Rafaela Oliveira de Souza 
-Orientador: Igor de Oliveira Knop 
-Instituição: Universidade Federal de Juiz de Fora (Ufjf)
+Para gerar a versão de produção, utilize `npm run build`.
+
+## Autoria
+
+- **Autora:** Rafaela Oliveira de Souza (rafaela.oliveira@estudante.ufjf.br)
+- **Orientador:** Prof. Igor de Oliveira Knop (igor.knop@ufjf.br)
+
+Departamento de Ciência da Computação, Universidade Federal de Juiz de Fora (UFJF).
+
+## Créditos
+
+- Efeitos sonoros: [Kenney](https://kenney.nl/), licença CC0.
