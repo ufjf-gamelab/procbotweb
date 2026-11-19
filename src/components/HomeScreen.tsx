@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AiFillPlayCircle, AiOutlineInfoCircle } from 'react-icons/ai';
+import { AiFillPlayCircle, AiOutlineInfoCircle, AiOutlineStar } from 'react-icons/ai';
 import robotIdle from '../assets/robot_idle.png';
 import { CreditsModal } from './CreditsModal';
+import { SurveyModal } from './SurveyModal';
 import { APP_VERSION } from '../game/version';
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
 
 export function HomeScreen({ onPlay }: Props) {
   const [creditsOpen, setCreditsOpen] = useState(false);
+  const [surveyOpen, setSurveyOpen] = useState(false);
 
   return (
     <div className="level-page home-page">
@@ -38,6 +40,10 @@ export function HomeScreen({ onPlay }: Props) {
               <AiOutlineInfoCircle size={20} aria-hidden="true" />
               Créditos
             </button>
+            <button type="button" className="btn-secondary home-credits" onClick={() => setSurveyOpen(true)}>
+              <AiOutlineStar size={20} aria-hidden="true" />
+              Avaliar
+            </button>
           </div>
         </div>
       </main>
@@ -45,6 +51,7 @@ export function HomeScreen({ onPlay }: Props) {
       <span className="app-version home-version">{APP_VERSION}</span>
 
       <CreditsModal isOpen={creditsOpen} onClose={() => setCreditsOpen(false)} />
+      <SurveyModal isOpen={surveyOpen} onClose={() => setSurveyOpen(false)} />
     </div>
   );
 }

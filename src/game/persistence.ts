@@ -5,6 +5,7 @@ const STORAGE_KEY = 'procbotweb:session:v2';
 const TUTORIAL_KEY = 'procbotweb:tutorial-seen:v1';
 const TUTORIALS_KEY = 'procbotweb:tutorials-seen:v2';
 const SPEED_KEY = 'procbotweb:speed:v1';
+const SURVEY_KEY = 'procbotweb:survey:v1';
 
 export type Speed = 'slow' | 'normal' | 'fast';
 
@@ -76,6 +77,26 @@ export function setSpeed(value: Speed) {
     localStorage.setItem(SPEED_KEY, value);
   } catch {
     // localStorage indisponível — velocidade simplesmente não persiste
+  }
+}
+
+export type SurveyState = { answered: boolean; prompts: number };
+
+export function getSurveyState(): SurveyState {
+  try {
+    const raw = localStorage.getItem(SURVEY_KEY);
+    const data = raw ? JSON.parse(raw) : null;
+    return { answered: data?.answered === true, prompts: Number(data?.prompts) || 0 };
+  } catch {
+    return { answered: false, prompts: 0 };
+  }
+}
+
+export function setSurveyState(value: SurveyState) {
+  try {
+    localStorage.setItem(SURVEY_KEY, JSON.stringify(value));
+  } catch {
+    return;
   }
 }
 

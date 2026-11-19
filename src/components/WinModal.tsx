@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import Confetti from 'react-confetti';
 import { useEffect, useRef, useState } from 'react';
+import { SurveyModal } from './SurveyModal';
 
 import { AiFillHome, AiOutlineRedo, AiOutlineArrowRight, AiFillStar, AiOutlineStar, AiFillBulb } from "react-icons/ai";
 
@@ -13,9 +14,11 @@ type Props = {
   beatOptimal: boolean;
   stepsCount: number;
   stars: 1 | 2 | 3;
+  surveyInvite: string | null;
 };
 
-export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, beatOptimal, stepsCount, stars }: Props) {
+export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, beatOptimal, stepsCount, stars, surveyInvite }: Props) {
+  const [surveyOpen, setSurveyOpen] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +66,16 @@ export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, b
           </div>
         )}
 
-        <div className="win-stats">
+        {surveyInvite && (
+          <div className="win-survey-invite">
+            <p>{surveyInvite} Que tal contar o que você achou do jogo?</p>
+            <button type="button" className="btn-primary" onClick={() => setSurveyOpen(true)}>
+              Avaliar o jogo
+            </button>
+          </div>
+        )}
+
+        <div className={`win-stats${surveyInvite ? ' has-invite' : ''}`}>
           <p>Você completou o desafio!</p>
           <div className="stat-box">
             <span>Comandos usados:</span>
@@ -91,7 +103,15 @@ export function WinModal({ isOpen, onNextLevel, onMenu, onReplay, isLastLevel, b
             </button>
           )}
         </div>
+
+        {!surveyInvite && (
+          <button type="button" className="win-survey-link" onClick={() => setSurveyOpen(true)}>
+            Avaliar o jogo
+          </button>
+        )}
       </motion.div>
+
+      <SurveyModal isOpen={surveyOpen} onClose={() => setSurveyOpen(false)} />
     </div>
   );
 }

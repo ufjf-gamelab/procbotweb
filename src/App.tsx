@@ -9,12 +9,12 @@ import {
   closestCenter, 
   DragOverlay } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { allLevels } from './game/levels';
+import { allLevels, levelBlocks } from './game/levels';
 import { HomeScreen } from './components/HomeScreen';
 import { LevelSelect } from './components/LevelSelect';
 import { arrayMove } from '@dnd-kit/sortable';
 import { reducer, initialState } from './game/reducer';
-import { loadSession, saveSession, restoreGameState } from './game/persistence';
+import { loadSession, saveSession, restoreGameState, getSurveyState, setSurveyState } from './game/persistence';
 import { computeStars, totalCommandsUsed } from './game/scoring';
 import { Palette } from './components/Palette';
 import { Program } from './components/Program';
@@ -86,6 +86,7 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [state, dispatch] = useReducer(reducer, undefined, () => restoreGameState(saved) ?? initialState);
   const [showWinModal, setShowWinModal] = useState(false);
+  const [surveyInvite, setSurveyInvite] = useState<string | null>(null);
   const [view, setView] = useState<'HOME' | 'MENU' | 'GAME'>('HOME');
   const resumeViewRef = useRef<'MENU' | 'GAME'>(saved?.view ?? 'MENU');
   const [mascotTipOpen, setMascotTipOpen] = useState(false);
@@ -125,7 +126,16 @@ export default function App() {
   useEffect(() => {
     if (state.win) {
       if (!completedLevels.includes(state.level.id)) {
-        setCompletedLevels(prev => [...prev, state.level.id]);
+        const nowCompleted = [...completedLevels, state.level.id];
+        setCompletedLevels(nowCompleted);
+        const block = levelBlocks.find(b => b.levels.some(l => l.id === state.level.id));
+        const blockDone = !!block && block.levels.every(l => nowCompleted.includes(l.id));
+        const allDone = allLevels.every(l => nowCompleted.includes(l.id));
+        const survey = getSurveyState();
+        if (!survey.answered && ((allDone && survey.prompts < 2) || (blockDone && survey.prompts === 0))) {
+          setSurveyState({ ...survey, prompts: survey.prompts + 1 });
+          setSurveyInvite(allDone ? 'Você terminou todas as fases!' : `Você terminou o bloco ${block?.title}!`);
+        }
       }
       const earnedStars = computeStars(state);
       if (totalCommandsUsed(state) < state.level.optimalCommands && !geniusLevels.includes(state.level.id)) {
@@ -141,6 +151,7 @@ export default function App() {
       return () => clearTimeout(timer);
     } else {
       setShowWinModal(false);
+      setSurveyInvite(null);
     }
   }, [state.win, state.level.id, completedLevels, geniusLevels]);
 
@@ -603,6 +614,7 @@ export default function App() {
               onNextLevel={handleNextLevel}
               onReplay={handleReplay}
               onMenu={handleMenu}
+              surveyInvite={surveyInvite}
             />
 
       <ConfirmModal
