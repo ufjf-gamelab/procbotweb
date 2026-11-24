@@ -5,6 +5,7 @@ import robotIdle from '../assets/robot_idle.png';
 import { CreditsModal } from './CreditsModal';
 import { SurveyModal } from './SurveyModal';
 import { APP_VERSION } from '../game/version';
+import { enterFullscreenOnMobile } from '../game/fullscreen';
 
 type Props = {
   onPlay: () => void;
@@ -32,7 +33,7 @@ export function HomeScreen({ onPlay }: Props) {
           <p className="home-subtitle">Programe o robô e acenda todas as luzes!</p>
 
           <div className="home-actions">
-            <button type="button" className="btn-primary home-play" onClick={onPlay}>
+            <button type="button" className="btn-primary home-play" onClick={() => { enterFullscreenOnMobile(); onPlay(); }}>
               <AiFillPlayCircle size={28} aria-hidden="true" />
               Jogar
             </button>
