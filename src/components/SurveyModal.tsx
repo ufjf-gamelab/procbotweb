@@ -8,8 +8,8 @@ type Props = {
 };
 
 const OPTIONS = [
-  { label: 'Tenho menos de 18 anos', url: SURVEY_URLS.kids },
-  { label: 'Tenho 18 anos ou mais', url: SURVEY_URLS.adult },
+  { label: 'Tenho de 8 a 14 anos', url: SURVEY_URLS.kids },
+  { label: 'Tenho 15 anos ou mais', url: SURVEY_URLS.adult },
 ];
 
 export function SurveyModal({ isOpen, onClose }: Props) {
